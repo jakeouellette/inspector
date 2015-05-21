@@ -107,12 +107,12 @@ class TaskDiffHook implements TaskExecutionListener, BuildListener {
             makeFile("vis/dag.js")
             makeFile("vis/dagre-d3.js")
             makeFile("vis/demo.js")
-            makeFile("vis/hover.html")
+            makeFile("vis/vis-report.html")
             makeFile("vis/jquery-1.9.1.min.js")
             makeFile("vis/tipsy.css")
             makeFile("vis/tipsy.js")
 
-            IndexWriter.write(new File(reportDir, "index.html"), changes, executedNames, new File(new File(reportDir, "vis"), "hover.html"))
+            IndexWriter.write(new File(reportDir, "index.html"), changes, executedNames, new File(new File(reportDir, "vis"), "dag.js"))
             println "Diff Report Written."
         } catch (Throwable e) {
             e.printStackTrace()

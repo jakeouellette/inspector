@@ -1,0 +1,58 @@
+<!doctype html>
+
+<meta charset="utf-8">
+<title>Visual report</title>
+
+<link rel="stylesheet" href="../diff.css">
+<script src="d3.v3.min.js" charset="utf-8"></script>
+<script src="dagre-d3.js"></script>
+
+<!-- Pull in JQuery dependencies -->
+<link rel="stylesheet" href="tipsy.css">
+<script src="jquery-1.9.1.min.js"></script>
+<script src="tipsy.js"></script>
+
+<h1>Dagre D3 Demo: Tooltip on Hover</h1>
+
+<style id="css">
+    text {
+    font-weight: 300;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serf;
+    font-size: 14px;
+    }
+
+    .node rect {
+    stroke: #333;
+    fill: #fff;
+    }
+
+    .edgePath path {
+    stroke: #333;
+    fill: #333;
+    stroke-width: 1.5px;
+    }
+
+    .node text {
+    pointer-events: none;
+    }
+
+    /* This styles the title of the tooltip */
+    .tipsy .name {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #60b1fc;
+    margin: 0;
+    }
+
+    /* This styles the body of the tooltip */
+    .tipsy .description {
+    font-size: 1.2em;
+    }
+</style>
+
+<svg width=960 height=600></svg>
+
+
+<script src="dag.js"></script>
+
+<script src="demo.js"></script>

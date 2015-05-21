@@ -1,0 +1,62 @@
+apply plugin: 'groovy'
+apply plugin: 'maven'
+
+repositories {
+    mavenLocal()
+    jcenter()
+}
+
+configurations {
+    fatJar
+}
+
+dependencies {
+    compile gradleApi()
+    compile localGroovy()
+    testCompile 'junit:junit:4.11'
+    compile 'commons-io:commons-io:2.4'
+    compile 'org.springframework:spring-web:4.1.6.RELEASE'
+    fatJar files('libs/com.zutubi.diff-3.0.dev.jar')
+    compile fileTree(dir: 'libs', include: '*.jar')
+}
+
+// Make it so the fatJar classes can be seen during compilation.
+sourceSets.main.compileClasspath += configurations.fatJar
+
+jar {
+    // Create a "fat" JAR by including all fatJar dependencies
+    from {
+        configurations.fatJar.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+
+    manifest {
+        attributes(
+                'Implementation-Title': "${group}.${artifact}",
+                'Implementation-Version': version)
+    }
+}
+
+def pomConfigured = { thisPom ->
+    thisPom.artifactId = artifact
+    thisPom.version = version
+    thisPom.dependencies.removeAll { it.scope == 'test'}
+}
+
+task writePom << {
+    // We write to the default
+    pom {
+        whenConfigured(pomConfigured)
+    }.writeTo("${buildDir}/poms/pom-default.xml")
+}
+
+install {
+    repositories.mavenInstaller {
+        pom.whenConfigured(pomConfigured)
+    }
+}
+
+// If assemble is called instead of install, write the pom explicitly
+// Otherwise, the install task will write the pom to the same location.
+assemble.dependsOn(writePom)

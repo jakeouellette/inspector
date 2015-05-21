@@ -1,0 +1,26 @@
+h1 {
+    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+    font-size: 1.2em; margin: .1em 0;
+}
+
+ul {
+    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+}
+
+.added {
+    background-color: #cfc;
+}
+
+.deleted {
+    background-color: #fcc;
+}
+
+.common {
+    background-color: #fff;
+}
+
+img.added {
+{
+  height: 100dp;
+  width: 100dp;
+}

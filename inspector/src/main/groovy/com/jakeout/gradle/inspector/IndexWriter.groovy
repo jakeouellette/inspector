@@ -62,7 +62,8 @@ class IndexWriter {
             }
             first = false
             def style = (t.changesByType == null || t.changesByType.size == 0) ?
-                    "" :
+                    "basefill: \"#fff\", \n" :
+                    "basefill: \"#7f7\", \n " +
                     "style: \"fill: #7f7\", \n"
             bw.write("\"$t.name\": { \n $style" +
                     "description: \"${t.changesByType.toString()}\" }")

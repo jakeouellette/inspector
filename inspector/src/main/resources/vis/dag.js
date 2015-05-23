@@ -47,7 +47,7 @@ inner.selectAll("g.node")
 
 inner.selectAll("g.node")
   .on("click", function(n){
-        var url = "../" + n + "-report.html";
+        var url = n + "-report.html";
         $(location).attr('href', url);
         window.location = url;
     });

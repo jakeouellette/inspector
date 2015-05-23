@@ -6,6 +6,6 @@ import org.gradle.api.Project
 class InspectorPlugin implements Plugin<Project> {
 
     public void apply(Project project) {
-        TaskDiffHook.setupFolderDiff(project)
+        DiffToolTasksListener.setupFolderDiff(project)
     }
 }

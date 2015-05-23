@@ -11,11 +11,23 @@ ul {
     background-color: #cfc;
 }
 
+.undeclaredadded {
+    background-color: #ccf;
+}
+
 .deleted {
     background-color: #fcc;
 }
 
+.undeclareddeleted {
+    background-color: #ebe;
+}
+
 .common {
+    background-color: #fff;
+}
+
+.undeclaredcommon {
     background-color: #fff;
 }
 

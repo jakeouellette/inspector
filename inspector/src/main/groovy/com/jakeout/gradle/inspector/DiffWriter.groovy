@@ -5,9 +5,7 @@ import com.zutubi.diff.PatchFile
 import com.zutubi.diff.PatchType
 import com.zutubi.diff.unified.UnifiedHunk
 import com.zutubi.diff.unified.UnifiedPatch
-import groovy.transform.Canonical
 import org.apache.commons.io.FilenameUtils
-import org.gradle.api.Task
 import org.springframework.web.util.HtmlUtils
 
 class DiffWriter {
@@ -30,21 +28,20 @@ class DiffWriter {
         def changesByType = new HashMap<String, Integer>()
 
         boolean anyUndeclaredChanges = false
-        if(patch.isPresent()) {
+        if (patch.isPresent()) {
             List<Patch> patches = patch.get().getPatches()
             for (Patch p : patches) {
                 filesTouched++
                 bw.write("<h1>$p.newFile</h1>")
 
-                boolean foundOutput
+                boolean foundOutput = false
                 for (File f : executionStats.task.getOutputs().files) {
-                    if (p.newFile.startsWith(f.absolutePath + "/")) {
+                    if (p.newFile.equals(f.absolutePath) || p.newFile.startsWith(f.absolutePath + "/")) {
                         foundOutput = true
                     }
                 }
-                if (foundOutput) {
-                    bw.write("<p><em>Declared output</em></p>")
-                } else {
+
+                if (!foundOutput) {
                     anyUndeclaredChanges = true
                     bw.write("<p><em>Undeclared output</em></p>")
                 }
@@ -53,18 +50,21 @@ class DiffWriter {
                 if (PatchType.ADD.equals(p.type) && SUPPORTED_IMAGE_FORMATS.contains(extension)) {
                     bw.write("<img src=\"$p.newFile\"/")
                 }
+
                 Integer count = changesByType.get(extension)
                 if (count == null) {
                     changesByType.put(extension, 1)
                 } else {
                     changesByType.put(extension, count + 1)
                 }
+                String divClassPrefix = !foundOutput ? "undeclared" : ""
 
                 if (p instanceof UnifiedPatch) {
                     UnifiedPatch up = (UnifiedPatch) p
                     for (UnifiedHunk h : up.getHunks()) {
                         int line = 0;
                         boolean summaryEnded = false;
+
 
                         bw.write("<div class=\"hunk\">")
                         bw.write("<details><summary>")
@@ -77,15 +77,18 @@ class DiffWriter {
                             line++
                             switch (l.type) {
                                 case UnifiedHunk.LineType.ADDED:
+                                    String divClass = divClassPrefix + "added"
                                     added++
-                                    bw.write("<div class=\"added\"><code>+ ${HtmlUtils.htmlEscape(l.content)}</code></div>")
+                                    bw.write("<div class=\"$divClass\"><code>+ ${HtmlUtils.htmlEscape(l.content)}</code></div>")
                                     break;
                                 case UnifiedHunk.LineType.DELETED:
+                                    String divClass = divClassPrefix + "deleted"
                                     removed++
-                                    bw.write("<div class=\"deleted\"><code>- ${HtmlUtils.htmlEscape(l.content)}</code></div>")
+                                    bw.write("<div class=\"$divClass\"><code>- ${HtmlUtils.htmlEscape(l.content)}</code></div>")
                                     break;
                                 case UnifiedHunk.LineType.COMMON:
-                                    bw.write("<div class=\"common\"><code>= ${HtmlUtils.htmlEscape(l.content)}</code></div>")
+                                    String divClass = divClassPrefix + "common"
+                                    bw.write("<div class=\"$divClass\"><code>= ${HtmlUtils.htmlEscape(l.content)}</code></div>")
                                     break;
                             }
                         }

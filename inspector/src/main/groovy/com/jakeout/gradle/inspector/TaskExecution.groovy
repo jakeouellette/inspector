@@ -13,4 +13,7 @@ class TaskExecution {
     public Map<String, Integer> changesByType
 
     public List<Task> dependsOnTasks
+
+    public Task task
+    public boolean anyUndeclaredChanges
 }

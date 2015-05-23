@@ -20,26 +20,44 @@ class DiffWriter {
     private final BufferedWriter bw
     private final List<Task> dependsOnTask
     private final List<Task> taskGraphDependencies
+    private final Task task
 
-    public DiffWriter(File out, String name, String relPath, List<Task> dependsOnTask) {
+    public DiffWriter(File out, String name, String relPath, List<Task> dependsOnTask, Task task) {
         this.name = name
         this.relPath = relPath
         this.out = out
         this.dependsOnTask = dependsOnTask
         this.taskGraphDependencies = taskGraphDependencies
+        this.task = task
         this.bw = new BufferedWriter(new FileWriter(out));
-        bw.write("<html><head><title>Changes from ${name}</title><link rel=\"stylesheet\" type=\"text/css\" href=\"diff.css\"></head><body>")
     }
 
     public TaskExecution write(PatchFile patch) {
+        bw.write("<html><head><title>Changes from ${name}</title><link rel=\"stylesheet\" type=\"text/css\" href=\"diff.css\"></head><body>")
+
         int filesTouched = 0
         int added = 0
         int removed = 0
 
+        boolean anyUndeclaredChanges = false
         List<Patch> patches = patch.getPatches()
         for (Patch p : patches) {
             filesTouched++
             bw.write("<h1>$p.newFile</h1>")
+
+            boolean foundOutput
+            for (File f : task.getOutputs().files) {
+                if (p.newFile.startsWith(f.absolutePath + "/")) {
+                    foundOutput = true
+                }
+            }
+            if(foundOutput) {
+                bw.write("<p><em>Declared output</em></p>")
+            } else {
+                anyUndeclaredChanges=true
+                bw.write("<p><em>Undeclared output</em></p>")
+            }
+
             def extension = FilenameUtils.getExtension(p.newFile)
             if (PatchType.ADD.equals(p.type) && SUPPORTED_IMAGE_FORMATS.contains(extension)) {
                 bw.write("<img src=\"$p.newFile\"/")
@@ -97,7 +115,9 @@ class DiffWriter {
                 hunksAdded: added,
                 hunksRemoved: removed,
                 changesByType: changesByType,
-                dependsOnTasks: dependsOnTask)
+                dependsOnTasks: dependsOnTask,
+                task: task,
+                anyUndeclaredChanges: anyUndeclaredChanges)
     }
 
     public void close() {

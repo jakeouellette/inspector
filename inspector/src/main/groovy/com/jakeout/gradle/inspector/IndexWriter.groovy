@@ -8,9 +8,15 @@ class IndexWriter {
     private static String REPLACED_EDGES = "// !-- REPLACE WITH EDGES --!"
 
     public static final write(File index, List<TaskExecution> children, Set<String> tasksExecuted, File visFile) {
+        // Disable writing to the index for the moment
+        // TODO: generate more value with this, then re-add it
+        //writeIndex(index, children);
 
+        updateDag(visFile, children, tasksExecuted)
+    }
+
+    public static void writeIndex(File index, List<TaskExecution> children) {
         BufferedWriter bw = new BufferedWriter(new FileWriter(index));
-        bw.write('<html><head><title>Gradle Build Inspection</title><link rel=\"stylesheet\" type=\"text/css\" href=\"diff.css\"></head><body>')
         bw.write('<ul>')
         for (TaskExecution child : children) {
             if (child.path && child.filesTouched > 0) {
@@ -31,6 +37,9 @@ class IndexWriter {
         bw.write('</ul>')
         bw.write('</body>')
         bw.close()
+    }
+
+    public static void updateDag(File visFile, List<TaskExecution> children, Set<String> tasksExecuted) {
         File tmpFile = new File(visFile.getAbsolutePath() + ".tmp")
         BufferedWriter bw2 = new BufferedWriter(new FileWriter(tmpFile));
         FileReader fr = new FileReader(visFile);
@@ -51,7 +60,6 @@ class IndexWriter {
         br.close()
         Files.delete(visFile.toPath())
         Files.move(tmpFile.toPath(), visFile.toPath())
-
     }
 
     public static void writeNodes(BufferedWriter bw, List<TaskExecution> tasks) {
@@ -61,10 +69,12 @@ class IndexWriter {
                 bw.write(', \n')
             }
             first = false
-            def style = (t.changesByType == null || t.changesByType.size == 0) ?
-                    "basefill: \"#fff\", \n" :
-                    "basefill: \"#7f7\", \n " +
-                    "style: \"fill: #7f7\", \n"
+            String color = (t.changesByType == null || t.changesByType.size == 0) ?
+                    "#fff" :
+                    (t.anyUndeclaredChanges ? "#77f" : "#7f7")
+            def style =
+                    "basefill: \"" + color + "\", \n" +
+                            "style: \"fill:" + color + "\", \n"
             bw.write("\"$t.name\": { \n $style" +
                     "description: \"${t.changesByType.toString()}\" }")
         }

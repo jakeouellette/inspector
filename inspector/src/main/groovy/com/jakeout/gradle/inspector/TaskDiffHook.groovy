@@ -81,14 +81,15 @@ class TaskDiffHook implements TaskExecutionListener, BuildListener {
             if (tOut.exists() && tOut.size() > 0) {
                 PatchFileParser parser = new PatchFileParser(new UnifiedPatchParser())
                 PatchFile patchFile = parser.parse(new FileReader(tOut))
-                DiffWriter writer = new DiffWriter(tReport, task.name, tReportRel, dependsOnTasks);
+                DiffWriter writer = new DiffWriter(tReport, task.name, tReportRel, dependsOnTasks, task);
                 def patchChangeInfo = writer.write(patchFile)
                 writer.close()
                 changes.add(patchChangeInfo)
             } else {
                 changes.add(new TaskExecution(
                         name: task.name,
-                        dependsOnTasks: dependsOnTasks))
+                        dependsOnTasks: dependsOnTasks,
+                        task: task))
             }
 
             FileUtils.deleteDirectory(taskDir(task))
@@ -107,10 +108,12 @@ class TaskDiffHook implements TaskExecutionListener, BuildListener {
             makeFile("vis/dag.js")
             makeFile("vis/dagre-d3.js")
             makeFile("vis/demo.js")
-            makeFile("vis/vis-report.html")
             makeFile("vis/jquery-1.9.1.min.js")
             makeFile("vis/tipsy.css")
             makeFile("vis/tipsy.js")
+            
+            Files.copy(this.getClass().getClassLoader().getResourceAsStream("vis/vis-report.html"),
+                    new File(reportDir, "index.html").toPath())
 
             IndexWriter.write(new File(reportDir, "index.html"), changes, executedNames, new File(new File(reportDir, "vis"), "dag.js"))
             println "Diff Report Written."

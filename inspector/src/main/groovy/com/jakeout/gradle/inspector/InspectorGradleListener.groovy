@@ -1,7 +1,10 @@
 package com.jakeout.gradle.inspector
 
-import com.jakeout.gradle.inspector.output.DiffWriter
-import com.jakeout.gradle.inspector.output.IndexWriter
+import com.jakeout.gradle.inspector.tasks.output.DiffWriter
+import com.jakeout.gradle.inspector.tasks.output.IndexWriter
+import com.jakeout.gradle.inspector.tasks.TaskAnalyzer
+import com.jakeout.gradle.inspector.tasks.TaskExecutionStats
+import com.jakeout.gradle.inspector.tasks.TaskStats
 import com.jakeout.gradle.utils.DiffUtil
 import org.apache.commons.io.FileUtils
 import org.gradle.BuildListener

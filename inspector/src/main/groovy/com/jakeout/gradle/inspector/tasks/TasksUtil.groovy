@@ -1,4 +1,4 @@
-package com.jakeout.gradle.tasks
+package com.jakeout.gradle.inspector.tasks
 
 import org.gradle.api.Task
 

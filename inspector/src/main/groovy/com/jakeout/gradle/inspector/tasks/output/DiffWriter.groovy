@@ -1,8 +1,8 @@
-package com.jakeout.gradle.inspector.output
+package com.jakeout.gradle.inspector.tasks.output
 
-import com.jakeout.gradle.inspector.TaskAnalyzer
-import com.jakeout.gradle.inspector.TaskDiffStats
-import com.jakeout.gradle.inspector.TaskExecutionStats
+import com.jakeout.gradle.inspector.tasks.TaskAnalyzer
+import com.jakeout.gradle.inspector.tasks.TaskDiffStats
+import com.jakeout.gradle.inspector.tasks.TaskExecutionStats
 import com.zutubi.diff.Patch
 import com.zutubi.diff.PatchType
 import com.zutubi.diff.unified.UnifiedHunk

@@ -1,4 +1,4 @@
-package com.jakeout.gradle.inspector
+package com.jakeout.gradle.inspector.tasks
 
 import com.zutubi.diff.PatchFile
 import groovy.transform.Canonical

@@ -1,5 +1,6 @@
-package com.jakeout.gradle.inspector
+package com.jakeout.gradle.inspector.tasks
 
+import com.jakeout.gradle.inspector.InspectorConfig
 import com.jakeout.gradle.utils.DiffUtil
 import com.zutubi.diff.Patch
 import com.zutubi.diff.PatchFile

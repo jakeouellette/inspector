@@ -1,9 +1,9 @@
-package com.jakeout.gradle.inspector.output
+package com.jakeout.gradle.inspector.tasks.output
 
-import com.jakeout.gradle.inspector.TaskDiffStats
-import com.jakeout.gradle.inspector.TaskExecutionStats
-import com.jakeout.gradle.inspector.TaskStats
-import com.jakeout.gradle.tasks.TasksUtil
+import com.jakeout.gradle.inspector.tasks.TaskDiffStats
+import com.jakeout.gradle.inspector.tasks.TaskExecutionStats
+import com.jakeout.gradle.inspector.tasks.TaskStats
+import com.jakeout.gradle.inspector.tasks.TasksUtil
 
 import java.nio.file.Files
 

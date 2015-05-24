@@ -1,7 +1,9 @@
-package com.jakeout.gradle.inspector
+package com.jakeout.gradle.inspector.output
 
+import com.jakeout.gradle.inspector.TaskAnalyzer
+import com.jakeout.gradle.inspector.TaskDiffStats
+import com.jakeout.gradle.inspector.TaskExecutionStats
 import com.zutubi.diff.Patch
-import com.zutubi.diff.PatchFile
 import com.zutubi.diff.PatchType
 import com.zutubi.diff.unified.UnifiedHunk
 import com.zutubi.diff.unified.UnifiedPatch
@@ -11,38 +13,34 @@ import org.springframework.web.util.HtmlUtils
 class DiffWriter {
     private static def SUPPORTED_IMAGE_FORMATS = ["png", "jpg", "jpeg", "svg", "gif"] as Set
 
-    private final TaskExecutionStats executionStats
-    private final BufferedWriter bw
-
-    public DiffWriter(File out, TaskExecutionStats executionStats) {
-        this.executionStats = executionStats
-        this.bw = new BufferedWriter(new FileWriter(out));
-    }
-
-    public TaskDiffStats write(Optional<PatchFile> patch) {
+    public static void write(File out,
+                             TaskExecutionStats executionStats,
+                             TaskDiffStats stats,
+                             List<String> overlappingTasks) {
+        def bw = new BufferedWriter(new FileWriter(out));
         bw.write("<html><head><title>Changes from ${executionStats.name}</title><link rel=\"stylesheet\" type=\"text/css\" href=\"diff.css\"></head><body>")
 
-        int filesTouched = 0
-        int added = 0
-        int removed = 0
-        def changesByType = new HashMap<String, Integer>()
+        if(!overlappingTasks.isEmpty()) {
+            if(!stats.anyUndeclaredChanges) {
+                bw.write("<p> Note that this task was run in parallel with:</p>")
+            } else {
+                bw.write("<p> Note that this task was run in parallel (potentially explaining undeclared changes) with:</p>")
+            }
 
-        boolean anyUndeclaredChanges = false
-        if (patch.isPresent()) {
-            List<Patch> patches = patch.get().getPatches()
+            bw.write("<ul>")
+            for(String taskName : overlappingTasks) {
+                bw.write("<li>$taskName</li")
+            }
+            bw.write("</ul>")
+        }
+        if (stats.patchFile.isPresent()) {
+            List<Patch> patches = stats.patchFile.get().getPatches()
             for (Patch p : patches) {
-                filesTouched++
                 bw.write("<h1>$p.newFile</h1>")
 
-                boolean foundOutput = false
-                for (File f : executionStats.task.getOutputs().files) {
-                    if (p.newFile.equals(f.absolutePath) || p.newFile.startsWith(f.absolutePath + "/")) {
-                        foundOutput = true
-                    }
-                }
+                boolean foundOutput = TaskAnalyzer.findOutput(p.newFile, executionStats.task.getOutputs().files)
 
                 if (!foundOutput) {
-                    anyUndeclaredChanges = true
                     bw.write("<p><em>Undeclared output</em></p>")
                 }
 
@@ -51,21 +49,12 @@ class DiffWriter {
                     bw.write("<img src=\"$p.newFile\"/")
                 }
 
-                Integer count = changesByType.get(extension)
-                if (count == null) {
-                    changesByType.put(extension, 1)
-                } else {
-                    changesByType.put(extension, count + 1)
-                }
                 String divClassPrefix = !foundOutput ? "undeclared" : ""
-
                 if (p instanceof UnifiedPatch) {
                     UnifiedPatch up = (UnifiedPatch) p
                     for (UnifiedHunk h : up.getHunks()) {
                         int line = 0;
                         boolean summaryEnded = false;
-
-
                         bw.write("<div class=\"hunk\">")
                         bw.write("<details><summary>")
 
@@ -78,12 +67,10 @@ class DiffWriter {
                             switch (l.type) {
                                 case UnifiedHunk.LineType.ADDED:
                                     String divClass = divClassPrefix + "added"
-                                    added++
                                     bw.write("<div class=\"$divClass\"><code>+ ${HtmlUtils.htmlEscape(l.content)}</code></div>")
                                     break;
                                 case UnifiedHunk.LineType.DELETED:
                                     String divClass = divClassPrefix + "deleted"
-                                    removed++
                                     bw.write("<div class=\"$divClass\"><code>- ${HtmlUtils.htmlEscape(l.content)}</code></div>")
                                     break;
                                 case UnifiedHunk.LineType.COMMON:
@@ -101,16 +88,6 @@ class DiffWriter {
                 }
             }
         }
-
-        new TaskDiffStats(
-                filesTouched: filesTouched,
-                hunksAdded: added,
-                hunksRemoved: removed,
-                anyUndeclaredChanges: anyUndeclaredChanges,
-                changesByType: changesByType)
-    }
-
-    public void close() {
         bw.write("</body></html>")
         bw.close()
     }

@@ -1,5 +1,8 @@
 package com.jakeout.gradle.inspector
 
+import com.jakeout.gradle.inspector.output.DiffWriter
+import com.jakeout.gradle.inspector.output.IndexWriter
+import com.jakeout.gradle.utils.DiffUtil
 import org.apache.commons.io.FileUtils
 import org.gradle.BuildListener
 import org.gradle.BuildResult
@@ -13,7 +16,7 @@ import org.gradle.api.tasks.TaskState
 import java.nio.file.Files
 import java.nio.file.Path
 
-class DiffToolTasksListener implements TaskExecutionListener, BuildListener {
+class InspectorGradleListener implements TaskExecutionListener, BuildListener {
 
     private final static String PROFILE_PATH = "buildProfile"
     private final static String DIFF_INCREMENTAL = "diffIncremental"
@@ -23,7 +26,7 @@ class DiffToolTasksListener implements TaskExecutionListener, BuildListener {
 
     private final InspectorConfig config
 
-    private final Map<String, DiffToolTaskListener> taskListener = new LinkedHashMap<String, DiffToolTaskListener>()
+    private final Map<String, TaskAnalyzer> taskAnalyzers = new LinkedHashMap<String, TaskAnalyzer>()
 
     public static void setupFolderDiff(Project project) {
         def taskRoot = new File(project.projectDir, PROFILE_PATH)
@@ -35,12 +38,12 @@ class DiffToolTasksListener implements TaskExecutionListener, BuildListener {
         FileUtils.forceMkdir(config.reportDir)
         FileUtils.forceMkdir(config.incrementalDir)
 
-        def hook = new DiffToolTasksListener(config)
+        def hook = new InspectorGradleListener(config)
         project.gradle.addListener(hook)
         hook
     }
 
-    private DiffToolTasksListener(InspectorConfig config) {
+    private InspectorGradleListener(InspectorConfig config) {
         this.config = config
     }
 
@@ -49,15 +52,15 @@ class DiffToolTasksListener implements TaskExecutionListener, BuildListener {
         // In case a clean task removed the build folder.
         FileUtils.forceMkdir(config.projectBuildDir)
 
-        taskListener.put(task.name, new DiffToolTaskListener(config, task, System.currentTimeMillis()))
-        DiffTool.backup(config.projectBuildDir, config.taskDir(task))
+        taskAnalyzers.put(task.name, new TaskAnalyzer(config, task, System.currentTimeMillis()))
+        DiffUtil.backup(config.projectBuildDir, config.taskDir(task))
     }
 
     @Override
     void afterExecute(Task task, TaskState taskState) {
-        def listener = taskListener.get(task.name)
+        def listener = taskAnalyzers.get(task.name)
         if (listener) {
-            listener.afterExecute(task, taskState)
+            listener.onAfterExecute(taskState)
         } else {
             println("No task listener for :" + task.name)
         }
@@ -79,17 +82,58 @@ class DiffToolTasksListener implements TaskExecutionListener, BuildListener {
             Files.copy(this.getClass().getClassLoader().getResourceAsStream("vis/vis-report.html"),
                     new File(config.reportDir, "index.html").toPath())
 
+
             List<TaskStats> sortedTasks = new ArrayList<TaskStats>(
-                    taskListener.values().collect { t -> t.taskStats })
+                    taskAnalyzers.values().collect { t -> t.taskStats })
                     .findResults { t -> t }
                     .sort { a, b -> Long.compare(a.executionStats.startTime, b.executionStats.startTime) }
 
-            IndexWriter.write(new File(config.reportDir, "index.html"), sortedTasks, new File(new File(config.reportDir, "vis"), "dag.js"))
+            Map<String, List<String>> overlappingTasks = getOverlappingTasks(sortedTasks)
+
+            for (TaskStats stats : sortedTasks) {
+                DiffWriter.write(
+                        new File(config.reportDir, stats.executionStats.path),
+                        stats.executionStats,
+                        stats.diffStats,
+                        overlappingTasks.get(stats.executionStats.task.name))
+            }
+
+            IndexWriter.write(
+                    new File(config.reportDir, "index.html"),
+                    sortedTasks,
+                    new File(new File(config.reportDir, "vis"), "dag.js"))
             println "Diff Report Written."
         } catch (Throwable e) {
             e.printStackTrace()
         }
 
+    }
+
+    public static Map<String, List<String>> getOverlappingTasks(List<TaskStats> taskStats) {
+        Map<String, List<String>> overlappingTasks = new HashMap<String, List<String>>()
+
+        for (TaskStats ts : taskStats) {
+            def task1 = ts.executionStats.task.name
+            overlappingTasks.put(task1, new LinkedList<String>())
+            def task1Start = ts.executionStats.startTime
+            def task1End = ts.executionStats.endTime
+            for (TaskStats ts2 : taskStats) {
+                def task2 = ts2.executionStats.task.name
+                if (!task2.equals(task1)) {
+                    def task2Start = ts2.executionStats.startTime
+                    def task2End = ts2.executionStats.endTime
+
+                    if ((task1Start > task2Start && task1Start < task2End) ||
+                            (task1End > task2Start && task1End < task2End)) {
+
+                        List<String> overlapping = overlappingTasks.get(task1)
+                        overlapping.add(task2)
+                    }
+                }
+
+            }
+        }
+        overlappingTasks
     }
 
     void makeFile(String path) {

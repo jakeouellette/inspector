@@ -13,16 +13,21 @@ class IndexWriter {
     private static String REPLACED_EDGES = "// !-- REPLACE WITH EDGES --!"
     private static String REPLACED_SIDEBAR = "<!-- SIDEBAR CONTENT -->"
 
-    public static final write(File index, List<TaskStats> children, File visFile) {
-        updateFile(index, getSidebarReplacer(children))
+    public static final write(File index, Map<String, File> subProjectIndicies, List<TaskStats> children, File visFile) {
+        updateFile(index, getSidebarReplacer(children, subProjectIndicies))
         updateFile(visFile, getGraphReplacer(children))
     }
 
-    public static Closure getSidebarReplacer(List<TaskStats> children) {
+    public static Closure getSidebarReplacer(List<TaskStats> children, Map<String, File> subProjectIndicies) {
         return { br, bw ->
             String s
             while ((s = br.readLine()) != null) {
                 if (s.contains(REPLACED_SIDEBAR)) {
+                    bw.write('<ul>')
+                    subProjectIndicies.each { name, file ->
+                        bw.write("<li><a href=\"$file\">$name</a></li>")
+                    }
+                    bw.write('</ul>')
                     bw.write('<ul>')
                     for (TaskStats taskStats : children) {
                         def executionStats = taskStats.executionStats

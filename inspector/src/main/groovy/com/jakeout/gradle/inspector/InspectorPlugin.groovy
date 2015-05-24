@@ -5,7 +5,8 @@ import org.gradle.api.Project
 
 class InspectorPlugin implements Plugin<Project> {
 
+    InspectorGradleListener listener
     public void apply(Project project) {
-        InspectorGradleListener.setupFolderDiff(project)
+        listener = InspectorGradleListener.setupFolderDiff(project)
     }
 }

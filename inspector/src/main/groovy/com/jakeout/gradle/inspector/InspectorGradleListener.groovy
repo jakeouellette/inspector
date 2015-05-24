@@ -13,6 +13,7 @@ import org.gradle.api.initialization.Settings
 import org.gradle.api.invocation.Gradle
 import org.gradle.api.tasks.TaskState
 
+import java.awt.Desktop
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -27,8 +28,9 @@ class InspectorGradleListener implements TaskExecutionListener, BuildListener {
     private final InspectorConfig config
 
     private final Map<String, TaskAnalyzer> taskAnalyzers = new LinkedHashMap<String, TaskAnalyzer>()
+    private final Project project
 
-    public static void setupFolderDiff(Project project) {
+    public static InspectorGradleListener setupFolderDiff(Project project) {
         def taskRoot = new File(project.projectDir, PROFILE_PATH)
         def config = new InspectorConfig(new File(taskRoot, DIFF_INCREMENTAL), new File(taskRoot, DIFF_REPORT), taskRoot, project.buildDir)
 
@@ -38,32 +40,41 @@ class InspectorGradleListener implements TaskExecutionListener, BuildListener {
         FileUtils.forceMkdir(config.reportDir)
         FileUtils.forceMkdir(config.incrementalDir)
 
-        def hook = new InspectorGradleListener(config)
+        def hook = new InspectorGradleListener(config, project)
         project.gradle.addListener(hook)
         hook
     }
 
-    private InspectorGradleListener(InspectorConfig config) {
+    private InspectorGradleListener(InspectorConfig config, Project project) {
         this.config = config
+        this.project = project
     }
 
     @Override
     void beforeExecute(Task task) {
-        // In case a clean task removed the build folder.
-        FileUtils.forceMkdir(config.projectBuildDir)
+        if(task.project.equals(project)) {
+            // In case a clean task removed the build folder.
+            FileUtils.forceMkdir(config.projectBuildDir)
 
-        taskAnalyzers.put(task.name, new TaskAnalyzer(config, task, System.currentTimeMillis()))
-        DiffUtil.backup(config.projectBuildDir, config.taskDir(task))
+            taskAnalyzers.put(task.name, new TaskAnalyzer(config, task, System.currentTimeMillis()))
+            DiffUtil.backup(config.projectBuildDir, config.taskDir(task))
+        }
     }
 
     @Override
     void afterExecute(Task task, TaskState taskState) {
-        def listener = taskAnalyzers.get(task.name)
-        if (listener) {
-            listener.onAfterExecute(taskState)
-        } else {
-            println("No task listener for :" + task.name)
+        if(task.project.equals(project)) {
+            def listener = taskAnalyzers.get(task.name)
+            if (listener) {
+                listener.onAfterExecute(taskState)
+            } else {
+                println("No task listener for :" + task.name)
+            }
         }
+    }
+
+    public File getIndex() {
+        return new File(config.reportDir, "index.html")
     }
 
     @Override
@@ -78,6 +89,15 @@ class InspectorGradleListener implements TaskExecutionListener, BuildListener {
             makeFile("vis/jquery-1.9.1.min.js")
             makeFile("vis/tipsy.css")
             makeFile("vis/tipsy.js")
+
+            Map<String, File> subprojectsByFile = new HashMap<String, File>()
+            for (Project subProj : project.getSubprojects()) {
+                def plugin = subProj.getPlugins().findPlugin(InspectorPlugin.class)
+                if(plugin != null) {
+                    def childListener = plugin.listener
+                    subprojectsByFile.put(subProj.name, childListener.getIndex())
+                }
+            }
 
             Files.copy(this.getClass().getClassLoader().getResourceAsStream("vis/vis-report.html"),
                     new File(config.reportDir, "index.html").toPath())
@@ -99,10 +119,14 @@ class InspectorGradleListener implements TaskExecutionListener, BuildListener {
             }
 
             IndexWriter.write(
-                    new File(config.reportDir, "index.html"),
+                    getIndex(),
+                    subprojectsByFile,
                     sortedTasks,
                     new File(new File(config.reportDir, "vis"), "dag.js"))
-            println "Diff Report Written."
+            println "Build inspection written to file://${getIndex()}"
+            if (project.hasProperty('showInspection')) {
+                Desktop.getDesktop().browse(new URI("file://${getIndex()}"))
+            }
         } catch (Throwable e) {
             e.printStackTrace()
         }

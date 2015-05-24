@@ -1,4 +1,4 @@
-package com.jakeout.gradle.inspector
+package com.jakeout.gradle.inspector.tasks
 
 import groovy.transform.Canonical
 

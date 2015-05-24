@@ -1,5 +1,6 @@
 package com.jakeout.gradle.inspector
 
+import com.zutubi.diff.PatchFile
 import groovy.transform.Canonical
 
 @Canonical
@@ -9,12 +10,5 @@ class TaskDiffStats {
     public int hunksRemoved
     public boolean anyUndeclaredChanges
     public Map<String, Integer> changesByType
-
-    public TaskDiffStats() {
-        filesTouched = 0
-        hunksAdded = 0
-        hunksRemoved = 0
-        anyUndeclaredChanges = false
-        changesByType = new HashMap<String, Integer>()
-    }
+    public Optional<PatchFile> patchFile
 }

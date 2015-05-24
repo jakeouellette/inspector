@@ -1,8 +1,8 @@
-package com.jakeout.gradle.inspector
+package com.jakeout.gradle.utils
 
 import org.apache.commons.io.FileUtils
 
-class DiffTool {
+class DiffUtil {
 
     public static void backup(File f, File target) {
         FileUtils.copyDirectory(f, target)

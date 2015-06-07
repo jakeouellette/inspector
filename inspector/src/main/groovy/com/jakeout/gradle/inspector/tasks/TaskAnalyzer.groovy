@@ -4,10 +4,8 @@ import com.jakeout.gradle.inspector.InspectorConfig
 import com.jakeout.gradle.utils.DiffUtil
 import com.zutubi.diff.Patch
 import com.zutubi.diff.PatchFile
-import com.zutubi.diff.PatchFileParser
 import com.zutubi.diff.unified.UnifiedHunk
 import com.zutubi.diff.unified.UnifiedPatch
-import com.zutubi.diff.unified.UnifiedPatchParser
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
 import org.gradle.api.Task
@@ -51,17 +49,24 @@ class TaskAnalyzer {
                     endTime: endTime)
 
 
-            DiffUtil.diff(config.projectBuildDir, tDir, tOut)
-            Optional<PatchFile> patchFile = (tOut.exists() && tOut.size() > 0) ?
-                    Optional.of(new PatchFileParser(new UnifiedPatchParser()).parse(new FileReader(tOut))) :
-                    Optional.empty()
+            Optional<PatchFile> patchFile = DiffUtil.diff(config.projectBuildDir, tDir, tOut)
+
+            Optional<TaskDiffStats> compareStats = Optional.empty()
+            if (config.compareBuild) {
+                def compareTaskOut = config.compareTaskOut(task)
+                Optional<PatchFile> comparePatchFile = DiffUtil.diff(config.compareTaskDir(task), tDir, compareTaskOut)
+                compareStats = Optional.of(evaluateDiff(execution, comparePatchFile))
+            }
+
 
             diffStats = evaluateDiff(execution, patchFile)
-            this.taskStats = new TaskStats(executionStats: execution, diffStats: diffStats)
+            this.taskStats = new TaskStats(executionStats: execution, diffStats: diffStats, compareStats: compareStats)
         } catch (Throwable e) {
             e.printStackTrace()
         } finally {
-            FileUtils.deleteDirectory(config.taskDir(task))
+            if (config.cleanUpEachTask) {
+                FileUtils.deleteDirectory(config.taskDir(task))
+            }
         }
     }
 
@@ -77,9 +82,9 @@ class TaskAnalyzer {
             for (Patch p : patches) {
                 filesTouched++
 
-                boolean foundOutput = findOutput(p.newFile, executionStats.task.getOutputs().files)
+                Optional<String> rootDirOfDeclaredOutput = findOutput(p.newFile, executionStats.task.getOutputs().files)
 
-                if (!foundOutput) {
+                if (!rootDirOfDeclaredOutput.isPresent()) {
                     anyUndeclaredChanges = true
                 }
 
@@ -121,13 +126,12 @@ class TaskAnalyzer {
                 patchFile: patch)
     }
 
-    public static boolean findOutput(String file, FileCollection files) {
-        boolean foundOutput = false
+    public static Optional<String> findOutput(String file, FileCollection files) {
         for (File f : files) {
-            if (file.equals(f.absolutePath) || file.startsWith(f.absolutePath + "/")) {
-                foundOutput = true
+            if (file.equals(f.absolutePath) || file.startsWith(f.absolutePath + '/')) {
+                return Optional.of(f);
             }
         }
-        foundOutput
+        Optional.empty()
     }
 }

@@ -23,4 +23,11 @@ Then, add the plugin and mavenLocal() to your build:
         apply plugin: 'com.jakeout.gradle-inspector'
     }
 
-You may use a property on your build -PshowInspection to auto-open the web URL
+## Build properties
+
+*Run with -PpropertyName to enable*
+
+ - __showInspection__: to auto-open the web URL
+
+- __compareLastBuild__: Compare against the last build (Each build throws away intermediate results unless this option
+is turned on, so you must enable this for at least one build for it to work.)

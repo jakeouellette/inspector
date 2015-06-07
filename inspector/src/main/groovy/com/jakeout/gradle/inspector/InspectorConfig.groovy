@@ -1,32 +1,51 @@
 package com.jakeout.gradle.inspector
 
+import groovy.transform.Canonical
 import org.gradle.api.Task
 
+@Canonical
 class InspectorConfig {
 
-    public final File incrementalDir
+    public boolean cleanUpEachTask
 
-    public final File taskRoot
+    public boolean compareBuild
 
-    public final File projectBuildDir
+    public boolean showInspection
 
-    public final File reportDir
+    public File incrementalDir
 
-    public InspectorConfig(File incrementalDir, File reportDir, File taskRoot, File projectBuildDir) {
-        this.incrementalDir = incrementalDir
-        this.taskRoot = taskRoot
-        this.reportDir = reportDir
-        this.projectBuildDir = projectBuildDir
-    }
+    public File inspectionRoot
+
+    public File projectBuildDir
+
+    public File reportDir
+
+    public File compareIncrementalDir
+
+    public File compareInspectionRoot
+
+    public File compareReportDir
+
     public File taskOut(Task task) {
-        new File(incrementalDir, task.name.replace(":", ".") + ".diff")
+        new File(incrementalDir, task.name.replace(':', '.') + '.diff')
+    }
+
+    /**
+     *  New incremental dir to compare against the old.
+     */
+    public File compareTaskOut(Task task) {
+        new File(incrementalDir, task.name.replace(':', '.') + '.compare.diff')
     }
 
     public String taskReport(Task task) {
-        task.name.replace(":", ".") + "-report.html"
+        task.name.replace(':', '.') + '-report.html'
     }
 
     public File taskDir(Task task) {
-        new File(incrementalDir, task.name.replace(":", "."))
+        new File(incrementalDir, task.name.replace(':', '.'))
+    }
+
+    public File compareTaskDir(Task task) {
+        new File(compareIncrementalDir, task.name.replace(':', '.'))
     }
 }

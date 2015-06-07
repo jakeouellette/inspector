@@ -13,7 +13,8 @@ class IndexWriter {
     private static String REPLACED_EDGES = "// !-- REPLACE WITH EDGES --!"
     private static String REPLACED_SIDEBAR = "<!-- SIDEBAR CONTENT -->"
 
-    public static final write(File index, Map<String, File> subProjectIndicies, List<TaskStats> children, File visFile) {
+    public static
+    final write(File index, Map<String, File> subProjectIndicies, List<TaskStats> children, File visFile) {
         updateFile(index, getSidebarReplacer(children, subProjectIndicies))
         updateFile(visFile, getGraphReplacer(children))
     }
@@ -91,10 +92,10 @@ class IndexWriter {
 
             first = false
             String color = (d.changesByType == null || d.changesByType.isEmpty()) ?
-                    "#fff" :
-                    (d.anyUndeclaredChanges ? "#77f" : "#7f7")
+                    '#fff' :
+                    (d.anyUndeclaredChanges ? '#88f' : '#f88')
 
-            String description = d.changesByType.isEmpty() ? "" : d.changesByType.toString()
+            String description = d.changesByType.isEmpty() ? '' : d.changesByType.toString()
             def style =
                     "basefill: \"$color\", \n" +
                             "style: \"fill:$color\", \n"

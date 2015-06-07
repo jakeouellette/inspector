@@ -41,7 +41,7 @@ jar {
 def pomConfigured = { thisPom ->
     thisPom.artifactId = artifact
     thisPom.version = version
-    thisPom.dependencies.removeAll { it.scope == 'test'}
+    thisPom.dependencies.removeAll { it.scope == 'test' }
 }
 
 task writePom << {

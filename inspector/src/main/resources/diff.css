@@ -17,6 +17,7 @@
 h1 {
     font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
     font-size: 1.2em; margin: .1em 0;
+    line-height: 2em;
 }
 
 ul {
@@ -24,27 +25,56 @@ ul {
     font-size: 0.9em;
 }
 
-.added {
-    background-color: #cfc;
+.info {
+    padding-left: 5px;
+    padding-right: 5px;
 }
 
-.undeclaredadded {
-    background-color: #ccf;
+.fileHeader {
+    padding-bottom: 5px;
+    padding-top: 5px;
+    padding-left: 5px;
+    padding-right: 5px;
+    background-color: whitesmoke;
+    border-color: gainsboro;
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    border-bottom-style: solid;
+    border-width: 1px;
+}
+
+.filename, .filenameSuffix {
+  border-width: 1px;
+  border-color: lightgray;
+  border-radius: 5px;
+  padding: 3px;
+  margin: 2px;
+  border-style: solid;
+}
+
+.filename {
+    margin-left: 15px;
+}
+
+.patchFile {
+    margin-bottom: 15px;
+    margin-top: 20px;
+    border-width: 1px;
+    border-style: solid;
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    border-color: gainsboro;
+}
+
+.added {
+    background-color: #cfc;
 }
 
 .deleted {
     background-color: #fcc;
 }
 
-.undeclareddeleted {
-    background-color: #ebe;
-}
-
 .common {
-    background-color: #fff;
-}
-
-.undeclaredcommon {
     background-color: #fff;
 }
 
@@ -85,4 +115,29 @@ text {
 /* This styles the body of the tooltip */
 .tipsy .description {
     font-size: 1.2em;
+}
+
+.fa-stacked-symbol {
+    font-size: 0.3em;
+    display:block; margin-top:2px;
+}
+
+.font-warn {
+    text-shadow: 0px 2px 3px #000000;
+    color: #d25035
+}
+
+.fileHeader span.warning {
+    display: none;
+    color: #fff;
+    text-decoration: none;
+    padding: 3px;
+}
+
+.fileHeader:hover span.warning {
+    display: block;
+    position: absolute;
+    background-color: #d25035;
+    box-shadow: 0px 2px 3px #000000;
+    margin: 2px 10px;
 }

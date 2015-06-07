@@ -6,4 +6,5 @@ import groovy.transform.Canonical
 class TaskStats {
     public TaskDiffStats diffStats
     public TaskExecutionStats executionStats
+    public Optional<TaskDiffStats> compareStats
 }

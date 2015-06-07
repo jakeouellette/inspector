@@ -52,10 +52,6 @@ ul {
   border-style: solid;
 }
 
-.filename {
-    margin-left: 15px;
-}
-
 .patchFile {
     margin-bottom: 15px;
     margin-top: 20px;
@@ -64,6 +60,10 @@ ul {
     border-top-left-radius: 7px;
     border-top-right-radius: 7px;
     border-color: gainsboro;
+}
+
+.file-type-icon {
+    margin-right: 15px;
 }
 
 .added {

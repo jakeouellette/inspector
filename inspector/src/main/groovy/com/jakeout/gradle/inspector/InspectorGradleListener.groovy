@@ -1,8 +1,8 @@
 package com.jakeout.gradle.inspector
 
 import com.jakeout.gradle.inspector.tasks.TaskAnalyzer
-import com.jakeout.gradle.inspector.tasks.TaskExecutionStats
-import com.jakeout.gradle.inspector.tasks.TaskStats
+import com.jakeout.gradle.inspector.tasks.model.TaskExecutionResults
+import com.jakeout.gradle.inspector.tasks.model.AnalysisResult
 import com.jakeout.gradle.inspector.tasks.output.DiffWriter
 import com.jakeout.gradle.inspector.tasks.output.IndexWriter
 import com.jakeout.gradle.utils.DiffUtil
@@ -30,7 +30,7 @@ class InspectorGradleListener implements TaskExecutionListener, BuildListener {
     private final static String DIFF_REPORT = 'report'
     private final static String PROFILE_PATH_COMPARE = 'buildProfileCompare'
 
-    private final List<TaskExecutionStats> changes = new LinkedList<TaskExecutionStats>()
+    private final List<TaskExecutionResults> changes = new LinkedList<TaskExecutionResults>()
 
     private final InspectorConfig config
 
@@ -120,7 +120,7 @@ class InspectorGradleListener implements TaskExecutionListener, BuildListener {
     }
 
     @Override
-    void buildFinished(BuildResult result) {
+    void buildFinished(BuildResult buildResult) {
         try {
             FileUtils.forceMkdir(new File(config.reportDir, 'vis'))
             // TODO: infer these dynamically
@@ -154,26 +154,26 @@ class InspectorGradleListener implements TaskExecutionListener, BuildListener {
                     new File(config.reportDir, 'index.html').toPath())
 
 
-            List<TaskStats> sortedTasks = new ArrayList<TaskStats>(
-                    taskAnalyzers.values().collect { t -> t.taskStats })
+            List<AnalysisResult> sortedResults = new ArrayList<AnalysisResult>(
+                    taskAnalyzers.values().collect { t -> t.results })
                     .findResults { t -> t }
-                    .sort { a, b -> Long.compare(a.executionStats.startTime, b.executionStats.startTime) }
+                    .sort { a, b -> Long.compare(a.executionResults.startTime, b.executionResults.startTime) }
 
-            Map<String, List<String>> overlappingTasks = getOverlappingTasks(sortedTasks)
+            Map<String, List<String>> overlappingTasks = getOverlappingTasks(sortedResults)
 
-            for (TaskStats stats : sortedTasks) {
+            for (AnalysisResult analysisResult : sortedResults) {
                 DiffWriter.write(
-                        new File(config.reportDir, stats.executionStats.path),
-                        stats.executionStats,
-                        stats.diffStats,
-                        stats.compareStats,
-                        overlappingTasks.get(stats.executionStats.task.name))
+                        new File(config.reportDir, analysisResult.executionResults.path),
+                        analysisResult.executionResults,
+                        analysisResult.diffResults,
+                        analysisResult.comparisonResults,
+                        overlappingTasks.get(analysisResult.executionResults.task.name))
             }
 
             IndexWriter.write(
                     getIndex(),
                     subprojectsByFile,
-                    sortedTasks,
+                    sortedResults,
                     new File(new File(config.reportDir, 'vis'), 'dag.js'))
             println "Build inspection written to file://${getIndex()}"
             if (config.showInspection) {
@@ -185,19 +185,19 @@ class InspectorGradleListener implements TaskExecutionListener, BuildListener {
 
     }
 
-    public static Map<String, List<String>> getOverlappingTasks(List<TaskStats> taskStats) {
+    public static Map<String, List<String>> getOverlappingTasks(List<AnalysisResult> analysisResults) {
         Map<String, List<String>> overlappingTasks = new HashMap<String, List<String>>()
 
-        for (TaskStats ts : taskStats) {
-            def task1 = ts.executionStats.task.name
+        for (AnalysisResult result : analysisResults) {
+            def task1 = result.executionResults.task.name
             overlappingTasks.put(task1, new LinkedList<String>())
-            def task1Start = ts.executionStats.startTime
-            def task1End = ts.executionStats.endTime
-            for (TaskStats ts2 : taskStats) {
-                def task2 = ts2.executionStats.task.name
+            def task1Start = result.executionResults.startTime
+            def task1End = result.executionResults.endTime
+            for (AnalysisResult result2 : analysisResults) {
+                def task2 = result2.executionResults.task.name
                 if (!task2.equals(task1)) {
-                    def task2Start = ts2.executionStats.startTime
-                    def task2End = ts2.executionStats.endTime
+                    def task2Start = result2.executionResults.startTime
+                    def task2End = result2.executionResults.endTime
 
                     if ((task1Start > task2Start && task1Start < task2End) ||
                             (task1End > task2Start && task1End < task2End)) {

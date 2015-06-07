@@ -60,8 +60,11 @@ ul {
     border-top-left-radius: 7px;
     border-top-right-radius: 7px;
     border-color: gainsboro;
+    overflow: scroll;
 }
-
+code {
+    white-space: pre;
+}
 .file-type-icon {
     margin-right: 15px;
 }

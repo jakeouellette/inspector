@@ -35,13 +35,13 @@ class DiffWriter {
                 }
 
                 if (comparisonResults.isPresent() && comparisonResults.get().patchFile.isPresent()) {
-                    h1: "Comparison to last build"
+                    h1("Comparison to last build")
                     writePatch(owner.delegate, comparisonResults.get().patchFile.get(), executionResults)
                     // Attached to next output
                 }
 
                 if (diffResults.patchFile.isPresent()) {
-                    h1: "Changes from start of task to task completion"
+                    h1("Changes from start of task to task completion")
                     writePatch(owner.delegate, diffResults.patchFile.get(), executionResults)
                 }
             }
@@ -96,7 +96,7 @@ class DiffWriter {
 
                                 int line = 0;
                                 boolean summaryEnded = false;
-                                hunk.getLines().each { l->
+                                hunk.getLines().each { l ->
                                     if (line > 4 && !summaryEnded) {
                                         summaryEnded = true;
                                         mkp.yieldUnescaped('</summary>')
@@ -105,13 +105,13 @@ class DiffWriter {
                                     line++
                                     switch (l.type) {
                                         case UnifiedHunk.LineType.ADDED:
-                                            div(class: "added") { code { mkp.yield("+ $l.content") } }
+                                            div(class: "added") { code("+ $l.content") }
                                             break;
                                         case UnifiedHunk.LineType.DELETED:
-                                            div(class: "deleted") { code { mkp.yield("- $l.content") } }
+                                            div(class: "deleted") { code("- $l.content") }
                                             break;
                                         case UnifiedHunk.LineType.COMMON:
-                                            div(class: "common") { code { mkp.yield("&nbsp $l.content") } }
+                                            div(class: "common") { code("&nbsp $l.content") }
                                             break;
                                     }
                                 }

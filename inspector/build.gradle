@@ -1,3 +1,16 @@
+// First, apply the publishing plugin
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "com.gradle.publish:plugin-publish-plugin:0.9.0"
+    }
+}
+
+apply plugin: "com.gradle.plugin-publish"
 apply plugin: 'groovy'
 apply plugin: 'maven'
 
@@ -60,3 +73,19 @@ install {
 // If assemble is called instead of install, write the pom explicitly
 // Otherwise, the install task will write the pom to the same location.
 assemble.dependsOn(writePom)
+
+
+pluginBundle {
+    website = 'https://github.com/jakeouellette/inspector'
+    vcsUrl = 'https://github.com/jakeouellette/inspector'
+
+    description = 'See github page for more information!'
+
+    plugins {
+        inspectorPlugin {
+            id = 'com.jakeout.gradle-inspector'
+            displayName = 'Gradle Inspector plugin'
+            tags = ['gradle', 'profiling', 'metrics', 'visualization']
+        }
+    }
+}

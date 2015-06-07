@@ -1,10 +1,10 @@
-package com.jakeout.gradle.inspector.tasks
+package com.jakeout.gradle.inspector.tasks.model
 
 import com.zutubi.diff.PatchFile
 import groovy.transform.Canonical
 
 @Canonical
-class TaskDiffStats {
+class TaskDiffResults {
     public int filesTouched
     public int hunksAdded
     public int hunksRemoved

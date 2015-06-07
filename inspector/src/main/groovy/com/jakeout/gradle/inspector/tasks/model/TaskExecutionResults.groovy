@@ -1,10 +1,10 @@
-package com.jakeout.gradle.inspector.tasks
+package com.jakeout.gradle.inspector.tasks.model
 
 import groovy.transform.Canonical
 import org.gradle.api.Task
 
 @Canonical
-class TaskExecutionStats {
+class TaskExecutionResults {
     public long startTime
     public long endTime
     public String path

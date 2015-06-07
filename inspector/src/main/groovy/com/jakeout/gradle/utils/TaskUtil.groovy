@@ -1,8 +1,8 @@
-package com.jakeout.gradle.inspector.tasks
+package com.jakeout.gradle.utils
 
 import org.gradle.api.Task
 
-class TasksUtil {
+public class TaskUtil {
     public static List<String> dependentFiles(Task parent, Task child) {
         List<String> dependentFiles = new LinkedList<String>()
 

@@ -1,9 +1,9 @@
 package com.jakeout.gradle.inspector.tasks.output
 
-import com.jakeout.gradle.inspector.tasks.TaskDiffStats
-import com.jakeout.gradle.inspector.tasks.TaskExecutionStats
-import com.jakeout.gradle.inspector.tasks.TaskStats
-import com.jakeout.gradle.inspector.tasks.TasksUtil
+import com.jakeout.gradle.inspector.tasks.model.TaskDiffResults
+import com.jakeout.gradle.inspector.tasks.model.TaskExecutionResults
+import com.jakeout.gradle.inspector.tasks.model.AnalysisResult
+import com.jakeout.gradle.utils.TaskUtil
 
 import java.nio.file.Files
 
@@ -14,12 +14,12 @@ class IndexWriter {
     private static String REPLACED_SIDEBAR = "<!-- SIDEBAR CONTENT -->"
 
     public static
-    final write(File index, Map<String, File> subProjectIndicies, List<TaskStats> children, File visFile) {
+    final write(File index, Map<String, File> subProjectIndicies, List<AnalysisResult> children, File visFile) {
         updateFile(index, getSidebarReplacer(children, subProjectIndicies))
         updateFile(visFile, getGraphReplacer(children))
     }
 
-    public static Closure getSidebarReplacer(List<TaskStats> children, Map<String, File> subProjectIndicies) {
+    public static Closure getSidebarReplacer(List<AnalysisResult> children, Map<String, File> subProjectIndicies) {
         return { br, bw ->
             String s
             while ((s = br.readLine()) != null) {
@@ -30,18 +30,17 @@ class IndexWriter {
                     }
                     bw.write('</ul>')
                     bw.write('<ul>')
-                    for (TaskStats taskStats : children) {
-                        def executionStats = taskStats.executionStats
-                        def diffStats = taskStats.diffStats
-                        String dependsOn = (executionStats.dependsOnTasks.isEmpty() ? "" : "$executionStats.dependsOnTasks<br/>")
-                        if (diffStats.filesTouched > 0) {
-                            bw.write("<li><a href=\"$executionStats.path\">$executionStats.name</a>"
-                                    + "[changed:$diffStats.filesTouched]"
-                                    + "[+$diffStats.hunksAdded]"
-                                    + "[-$diffStats.hunksRemoved]"
+                    for (AnalysisResult analysisResult : children) {
+                        def executionResults = analysisResult.executionResults
+                        def diffResults = analysisResult.diffResults
+                        if (diffResults.filesTouched > 0) {
+                            bw.write("<li><a href=\"$executionResults.path\">$executionResults.name</a>"
+                                    + "[changed:$diffResults.filesTouched]"
+                                    + "[+$diffResults.hunksAdded]"
+                                    + "[-$diffResults.hunksRemoved]"
                                     + "</li>")
                         } else {
-                            bw.write("<li>$executionStats.name</li>")
+                            bw.write("<li>$executionResults.name</li>")
                         }
                     }
                     bw.write('</ul>')
@@ -52,7 +51,7 @@ class IndexWriter {
         }
     }
 
-    public static Closure getGraphReplacer(List<TaskStats> children) {
+    public static Closure getGraphReplacer(List<AnalysisResult> children) {
         return { br, bw ->
             String s
             while ((s = br.readLine()) != null) {
@@ -81,11 +80,11 @@ class IndexWriter {
         Files.move(tmpFile.toPath(), visFile.toPath())
     }
 
-    public static void writeNodes(BufferedWriter bw, List<TaskStats> tasks) {
+    public static void writeNodes(BufferedWriter bw, List<AnalysisResult> results) {
         boolean first = true
-        tasks.each { TaskStats taskStats ->
-            TaskExecutionStats tes = taskStats.executionStats
-            TaskDiffStats d = taskStats.diffStats
+        results.each { AnalysisResult analysisResult ->
+            TaskExecutionResults tes = analysisResult.executionResults
+            TaskDiffResults d = analysisResult.diffResults
             if (!first) {
                 bw.write(', \n')
             }
@@ -105,13 +104,13 @@ class IndexWriter {
 
     }
 
-    public static void writeEdges(BufferedWriter bw, List<TaskStats> tasks) {
-        Set<String> names = tasks.collect { d -> d.executionStats.name }.toSet()
+    public static void writeEdges(BufferedWriter bw, List<AnalysisResult> tasks) {
+        Set<String> names = tasks.collect { d -> d.executionResults.name }.toSet()
 
-        tasks.each { TaskStats taskStats ->
-            TaskExecutionStats tes = taskStats.executionStats
+        tasks.each { AnalysisResult analysisResult ->
+            TaskExecutionResults tes = analysisResult.executionResults
             tes.dependsOnTasks.each { dependsOn ->
-                List<String> inputs = TasksUtil.dependentFiles(tes.task, dependsOn)
+                List<String> inputs = TaskUtil.dependentFiles(tes.task, dependsOn)
                 // TODO: add an on hover effect
                 if (names.contains(tes.name) && names.contains(dependsOn.name)) {
                     bw.writeLine("g.setEdge(\"$dependsOn.name\", \"$tes.name\", { label: \"\" });")

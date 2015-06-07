@@ -1,5 +1,12 @@
 # inspector
-Gradle build inspector, clarifies what's going on inside your Gradle build. Shows change in your file system during a build.
+
+Gradle build inspector, clarifies what's going on inside your Gradle build. Features:
+
+ - Makes it easy to understand your task dependencies by generating a task dependency graph.
+
+ - Makes it easy to know what files have changed on disk by running diff (windows not supported)
+
+ - *incubating* Compare the differences in file changes on disk between two builds by using -PcompareLastBuild
 
 ## To use:
 
@@ -27,7 +34,12 @@ Then, add the plugin and mavenLocal() to your build:
 
 *Run with -PpropertyName to enable*
 
- - __showInspection__: to auto-open the web URL
+ - __showInspection__: to auto-open the web URL.
 
-- __compareLastBuild__: Compare against the last build (Each build throws away intermediate results unless this option
-is turned on, so you must enable this for at least one build for it to work.)
+- *incubating* __compareLastBuild__: Generates a report comparing this build's inputs and outputs against the last
+build you made. These changes are written to the report page for each task (above the normal report.)
+
+This can be handy (e.g., if you're trying to figure out what is different about a new version of a Gradle plugin.)
+
+Note: Each build throws away intermediate results unless this option is turned on, so you must enable this for at least
+one build for it to work.

@@ -1,6 +1,7 @@
 package com.jakeout.gradle.inspector.tasks.output
 
 import com.jakeout.gradle.inspector.tasks.model.AnalysisResult
+import kotlinx.html.*
 import java.io.*
 import java.nio.file.Files
 
@@ -22,37 +23,51 @@ object IndexWriter {
             : (BufferedReader, BufferedWriter) -> Unit {
         return { br, bw ->
             var s = br.readLine()
-            while (s != null) {
-                if (s.contains(REPLACED_SIDEBAR)) {
-                    bw.write("<ul>")
-                    for (entry in subProjectIndicies.entrySet()) {
-                        val name = entry.getKey()
-                        val file = entry.getValue()
-                        bw.write("<li><a href=\"$file\">$name</a></li>")
-                    }
-                    bw.write("</ul>")
-                    bw.write("<ul>")
-                    for (analysisResult in children) {
-                        val executionResults = analysisResult.executionResults
-                        val diffResults = analysisResult.diffResults
-                        if (diffResults.filesTouched > 0) {
-                            bw.write("<li><a href=\"${executionResults.path}\">${executionResults.name}</a>"
-                                    + "[changed:${diffResults.filesTouched}]"
-                                    + "[+${diffResults.hunksAdded}]"
-                                    + "[-${diffResults.hunksRemoved}]"
-                                    + "</li>")
-                        } else {
-                            bw.write("<li>${executionResults.name}</li>")
+            val partial = partial {
+                while (s != null) {
+                    if (s.contains(REPLACED_SIDEBAR)) {
+                        if (subProjectIndicies.size() > 0) {
+                            ul {
+                                for (entry in subProjectIndicies.entrySet()) {
+                                    li {
+                                        a {
+                                            attribute("href", entry.getValue().toString())
+                                            +entry.getKey()
+                                        }
+                                    }
+                                }
+                            }
                         }
+                        if (children.size() > 0) {
+                            ul {
+                                for (analysisResult in children) {
+                                    val executionResults = analysisResult.executionResults
+                                    val diffResults = analysisResult.diffResults
+                                    if (diffResults.filesTouched > 0) {
+                                        li {
+                                            a {
+                                                attribute("href", executionResults.path)
+                                                +executionResults.name
+                                            }
+                                            +"[changed:${diffResults.filesTouched}]"
+                                            +"[+${diffResults.hunksAdded}]"
+                                            +"[-${diffResults.hunksRemoved}]"
+                                        }
+                                    } else {
+                                        li {
+                                            +executionResults.name
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        !(s + "\n")
                     }
-                    bw.write("</ul>")
-                } else {
-                    bw.write(s)
-                    bw.newLine()
+                    s = br.readLine()
                 }
-
-                s = br.readLine()
             }
+            bw.write(partial.toString())
         }
     }
 

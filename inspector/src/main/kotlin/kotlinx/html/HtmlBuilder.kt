@@ -202,3 +202,11 @@ public class HtmlText(containingTag: HtmlTag?, private val text: String) : HtmlE
 public class InvalidHtmlException(message: String) : RuntimeException(message) {
 
 }
+
+public class HtmlPartial() : HtmlBodyTag(null, "", RenderStyle.expanded) {
+    protected override fun renderElement(builder: StringBuilder, indent: String) {
+        if (children.size() > 0) {
+            children.forEach { it.renderElement(builder, "") }
+        }
+    }
+}

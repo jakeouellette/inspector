@@ -1,22 +1,27 @@
 // First, apply the publishing plugin
 buildscript {
+    ext.kotlin_version = '0.12.613'
     repositories {
         maven {
             url "https://plugins.gradle.org/m2/"
         }
+        mavenCentral()
     }
     dependencies {
         classpath "com.gradle.publish:plugin-publish-plugin:0.9.0"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
 apply plugin: "com.gradle.plugin-publish"
 apply plugin: 'groovy'
 apply plugin: 'maven'
+apply plugin: 'kotlin'
 
 repositories {
     mavenLocal()
     jcenter()
+    mavenCentral()
 }
 
 configurations {
@@ -31,6 +36,7 @@ dependencies {
     compile 'org.springframework:spring-web:4.1.6.RELEASE'
     fatJar files('libs/com.zutubi.diff-3.0.dev.jar')
     compile fileTree(dir: 'libs', include: '*.jar')
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 }
 
 // Make it so the fatJar classes can be seen during compilation.
@@ -88,4 +94,8 @@ pluginBundle {
             tags = ['gradle', 'profiling', 'metrics', 'visualization']
         }
     }
+}
+
+sourceSets {
+    main.java.srcDirs += 'src/main/kotlin'
 }

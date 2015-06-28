@@ -1,6 +1,5 @@
 package com.jakeout.gradle.utils.gtree
 
-import com.jakeout.gradle.utils.StringUtil
 
 public class GTreeDiffNode extends GTreeNode implements HasDiff {
 

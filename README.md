@@ -34,7 +34,7 @@ Then, add the plugin and mavenLocal() to your build:
 
 Understanding Gradle Task graphs can be challenging. Gradle typically outputs a linear view of all of the tasks run during a build, with no sense of time or dependencies.
 
-The Gradle build inspector elucidates the task graph by displaying it as a canvas directed-acyclic-graph using [d3](http://d3js.org/) as a rendering engine with [dagre](https://github.com/cpettitt/dagre-d3) as a layout manager.
+The Gradle build inspector elucidates the task graph by displaying it as a canvas directed-acyclic-graph using [d3](http://d3js.org/) as a rendering engine with [dagre](https://github.com/cpettitt/dagre-d3) as a layout manager.  Uses [Kotlinx.html](https://github.com/kotlinx/kotlinx.html) to generate html.
 
 Inspector generates a task graph for each app / library it is applied to, and will attempt to link them if you apply it to all projects in a hierarchy.
 

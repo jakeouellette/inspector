@@ -11,3 +11,5 @@ public open class HTML() : HtmlTag(null, "html", RenderStyle.adaptive) {
 }
 
 public fun html(init: HTML.() -> Unit): HTML = build(HTML(), init)
+
+public fun partial(init: HtmlBodyTag.() -> Unit): HtmlBodyTag = build(HtmlPartial(), init)

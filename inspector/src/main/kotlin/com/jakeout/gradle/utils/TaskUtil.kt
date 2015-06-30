@@ -10,12 +10,10 @@ public object TaskUtil {
 
         for (intoParent in parent.getInputs().getFiles()) {
             for (outFromChild in child.getOutputs().getFiles()) {
-                if (intoParent.getAbsolutePath().startsWith(outFromChild.getAbsolutePath())) {
-                    if (intoParent.getAbsolutePath().equals(outFromChild.getAbsolutePath())) {
-                        dependentFiles.add(intoParent.getAbsolutePath())
-                    } else {
-                        dependentFiles.add(intoParent.getAbsolutePath() + " (" + outFromChild.getAbsolutePath() + ")")
-                    }
+                if (intoParent.getAbsolutePath().equals(outFromChild.getAbsolutePath())) {
+                    dependentFiles.add(intoParent.getAbsolutePath())
+                } else if (intoParent.getAbsolutePath().startsWith(outFromChild.getAbsolutePath())) {
+                    dependentFiles.add(intoParent.getAbsolutePath() + " (" + outFromChild.getAbsolutePath() + ")")
                 }
             }
         }

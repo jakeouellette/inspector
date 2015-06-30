@@ -10,7 +10,6 @@ object IndexWriter {
     val REPLACED_EDGES = "// !-- REPLACE WITH EDGES --!"
     val REPLACED_SIDEBAR = "<!-- SIDEBAR CONTENT -->"
 
-
     fun write(index: File,
               subProjectIndicies: Map<String, File>,
               children: List<AnalysisResult>,
@@ -126,7 +125,6 @@ object IndexWriter {
             bw.write("\"${tes.name}\": { \n $style" +
                     "description: \"$description\" }")
         }
-
     }
 
     fun writeEdges(bw: BufferedWriter, tasks: List<AnalysisResult>) {

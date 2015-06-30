@@ -46,13 +46,8 @@ public class InspectorGradleListener(val config: InspectorConfig, val project: P
 
             val showInspection = project.hasProperty(SHOW_INSPECTION_PROPERTY)
 
-            var cleanUpEachTask = true
-            var compareBuild = false
-            if (project.hasProperty(COMPARE_LAST_BUILD_PROPERTY)) {
-                cleanUpEachTask = false
-                compareBuild = true
-                // needed to save the diff-comparison for the next run.
-            }
+            val compareBuild = project.hasProperty(COMPARE_LAST_BUILD_PROPERTY)
+            val cleanUpEachTask = !compareBuild
 
             val config = InspectorConfig(
                     incrementalDir = incrementalDir,

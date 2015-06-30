@@ -96,34 +96,42 @@ class DiffWriter {
 
                     if (patch is UnifiedPatch) {
                         for (hunk in  patch.getHunks()) {
-                            div(c = "hunk") {
-                                details {
-                                    !"<summary>"
-
-                                    var line = 0;
-                                    var summaryEnded = false;
-                                    for (l in hunk.getLines()) {
-                                        if (line > 4 && !summaryEnded) {
-                                            summaryEnded = true;
-                                            !"</summary>"
-                                        }
-
-                                        line++
-                                        when (l.getType()) {
-                                            UnifiedHunk.LineType.ADDED -> div(c = "added") { code { +"+ ${l.getContent()}" } }
-                                            UnifiedHunk.LineType.DELETED -> div(c = "deleted") { code { +"- ${l.getContent()}" } }
-                                            UnifiedHunk.LineType.COMMON -> div(c = "common") { code { +"&nbsp ${l.getContent()}" } }
-                                        }
-                                    }
-
-                                    if (!summaryEnded) {
-                                        !"</summary>"
-                                    }
-                                }
-                            }
+                            writePatch(hunk)
                         }
                     }
                 }
+            }
+        }
+
+        fun DIV.writePatch(hunk: UnifiedHunk) {
+            div(c = "hunk") {
+                details {
+                    !"<summary>"
+
+                    var line = 0;
+                    var summaryEnded = false;
+                    for (l in hunk.getLines()) {
+                        if (line > 4 && !summaryEnded) {
+                            summaryEnded = true;
+                            !"</summary>"
+                        }
+                        line++
+
+                        writeLine(l)
+                    }
+
+                    if (!summaryEnded) {
+                        !"</summary>"
+                    }
+                }
+            }
+        }
+
+        fun DIV.writeLine(line: UnifiedHunk.Line) {
+            when (line.getType()) {
+                UnifiedHunk.LineType.ADDED -> div(c = "added") { code { +"+ ${line.getContent()}" } }
+                UnifiedHunk.LineType.DELETED -> div(c = "deleted") { code { +"- ${line.getContent()}" } }
+                UnifiedHunk.LineType.COMMON -> div(c = "common") { code { +"&nbsp ${line.getContent()}" } }
             }
         }
     }

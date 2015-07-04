@@ -2,6 +2,7 @@ package com.jakeout.gradle.inspector.tasks
 
 import com.jakeout.gradle.inspector.InspectorConfig
 import com.jakeout.gradle.inspector.tasks.model.AnalysisResult
+import com.jakeout.gradle.inspector.tasks.model.FileState
 import com.jakeout.gradle.inspector.tasks.model.TaskDiffResults
 import com.jakeout.gradle.inspector.tasks.model.TaskExecutionResults
 import com.jakeout.gradle.utils.DiffUtil
@@ -14,8 +15,10 @@ import org.gradle.api.Task
 import org.gradle.api.file.FileCollection
 import org.gradle.api.logging.Logging
 import org.gradle.api.tasks.TaskState
+import java.io.File
 import java.util.HashMap
 import java.util.LinkedList
+import java.util.regex.Pattern
 
 class TaskAnalyzer(val config: InspectorConfig, val task: Task, val buildStarted: Long) {
 
@@ -25,10 +28,41 @@ class TaskAnalyzer(val config: InspectorConfig, val task: Task, val buildStarted
             var added = 0
             var removed = 0
             val changesByType = HashMap<String, Int>()
-
+            val binaryFiles = HashMap<String, FileState>()
             var anyUndeclaredChanges = false
             if (patch != null) {
                 val patches = patch.getPatches()
+                val extendedInfos = patch.getExtendedInfo()
+                for (info in extendedInfos) {
+                    val pattern = Pattern.compile(("Binary files (.*) and (.*) differ"))
+                    val matcher = pattern.matcher(info.toString())
+                    if (matcher.matches() && matcher.groupCount() == 2) {
+                        val from = matcher.group(1)
+                        val to = matcher.group(2)
+                        val fromFile = File(from)
+                        val toFile = File(to)
+                        val extension = FilenameUtils.getExtension(to)
+                        val count = changesByType.get(extension)
+                        if (count == null) {
+                            changesByType.put(extension, 1)
+                        } else {
+                            changesByType.put(extension, count + 1)
+                        }
+                        if(fromFile.exists() && toFile.exists()) {
+                            binaryFiles.put(to, FileState.CHANGED)
+                        } else if (fromFile.exists() && !toFile.exists()) {
+                            binaryFiles.put(to, FileState.DELETED)
+                        } else if (!fromFile.exists() && toFile.exists()) {
+                            binaryFiles.put(to, FileState.ADDED);
+                        } else {
+                            // This is being checked at a different time as when
+                            // the diff file was written, so may have been
+                            // changed on disk.
+                            binaryFiles.put(to, FileState.UNKNOWN)
+                        }
+                    }
+                }
+
                 for (p in patches) {
                     filesTouched++
 
@@ -68,7 +102,8 @@ class TaskAnalyzer(val config: InspectorConfig, val task: Task, val buildStarted
                     hunksRemoved = removed,
                     anyUndeclaredChanges = anyUndeclaredChanges,
                     changesByType = changesByType,
-                    patchFile = patch)
+                    patchFile = patch,
+                    binaries = binaryFiles)
         }
 
         fun findOutput(file: String, files: FileCollection): String? {

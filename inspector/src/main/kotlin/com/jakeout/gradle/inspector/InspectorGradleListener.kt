@@ -27,7 +27,7 @@ public class InspectorGradleListener(val config: InspectorConfig, val project: P
     companion object {
         val SHOW_INSPECTION_PROPERTY = "showInspection"
         val COMPARE_LAST_BUILD_PROPERTY = "compareLastBuild"
-        val PROFILE_PATH = "buildProfile"
+        val PROFILE_PATH = ".buildProfile"
         val DIFF_INCREMENTAL = "diffIncremental"
         val DIFF_REPORT = "report"
         val PROFILE_PATH_COMPARE = "buildProfileCompare"
@@ -153,7 +153,7 @@ public class InspectorGradleListener(val config: InspectorConfig, val project: P
             makeFile("font/fonts/fontawesome-webfont.woff2")
 
             val subprojectsByFile = HashMap<String, File>()
-            for (subProj in project.getSubprojects()) {
+            for (subProj in project.getChildProjects().values()) {
                 val plugin = subProj.getPlugins().findPlugin(javaClass<InspectorPlugin>()) as InspectorPlugin
                 val listener = plugin.listener
                 if (listener != null) {
@@ -209,7 +209,6 @@ public class InspectorGradleListener(val config: InspectorConfig, val project: P
         Files.copy(
                 this.javaClass.getClassLoader().getResourceAsStream(path),
                 file)
-
     }
 
     override fun buildStarted(gradle: Gradle) {

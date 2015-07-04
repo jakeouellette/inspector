@@ -1,12 +1,8 @@
 package com.jakeout.gradle.inspector.tasks.output
 
 import com.jakeout.gradle.inspector.tasks.TaskAnalyzer
-import com.jakeout.gradle.inspector.tasks.model.FileState
-import com.jakeout.gradle.inspector.tasks.model.TaskDiffResults
-import com.jakeout.gradle.inspector.tasks.model.TaskExecutionResults
-import com.zutubi.diff.PatchFile
+import com.jakeout.gradle.inspector.tasks.model.*
 import com.zutubi.diff.unified.UnifiedHunk
-import com.zutubi.diff.unified.UnifiedPatch
 import kotlinx.html.*
 import org.apache.commons.io.FilenameUtils
 import java.io.BufferedWriter
@@ -37,32 +33,14 @@ class DiffWriter {
                                 overlappingTaskHtml(diffResults, overlappingTasks)
                             }
 
-                            if (comparisonResults != null && comparisonResults.patchFile != null) {
+                            if (comparisonResults != null) {
                                 h1 { +"Comparison to last build" }
-                                if (comparisonResults.binaries.size() > 0) {
-                                    h2 { +"Binary Comparisons" }
-                                    for (binary in comparisonResults.binaries.entrySet()) {
-                                        writeBinary(binary.getKey(), binary.getValue(), executionResults)
-                                    }
-                                }
-                                writePatch(comparisonResults.patchFile, executionResults)
+                                writeDiff(comparisonResults, executionResults)
                                 // Attached to next output
                             }
 
-                            if (diffResults.binaries.size() > 0) {
-                                h2 { +"Binary inputs" }
-                                for (binary in diffResults.binaries.entrySet()) {
-                                    writeBinary(binary.getKey(), binary.getValue(), executionResults)
-                                }
-                                // Attached to next output
-                            }
-
-                            if (diffResults.patchFile != null && diffResults.patchFile.getPatches().size() != 0) {
-                                h1 { +"Changes from start of task to task completion" }
-                                writePatch(diffResults.patchFile, executionResults)
-                            } else {
-                                h1 { +"No changes from start of task to task completion" }
-                            }
+                            h1 { +"Changes from start of task to task completion" }
+                            writeDiff(diffResults, executionResults)
                         }
 
                     }.toString()
@@ -70,7 +48,28 @@ class DiffWriter {
             bw.close()
         }
 
-        fun BODY.overlappingTaskHtml(taskDiffResults: TaskDiffResults, overlappingTasks: List<String>) {
+        private fun HtmlBodyTag.writeDiff(diff: TaskDiffResults, executionResults: TaskExecutionResults) {
+            if (diff.changesByType.size() == 0) {
+                h2 { +"No changes from start of task to task completion" }
+                return
+            }
+
+            if (diff.changedFiles.size() > 0) {
+                h2 { +"Non-plaintext Files" }
+                for (file in diff.changedFiles) {
+                    writeBinary(file, executionResults)
+                }
+            }
+
+            if (diff.changedContents.size() > 0) {
+                h2 { +"Plaintext Files" }
+                for (patch in diff.changedContents) {
+                    writePatch(patch, executionResults)
+                }
+            }
+        }
+
+        fun HtmlBodyTag.overlappingTaskHtml(taskDiffResults: TaskDiffResults, overlappingTasks: List<String>) {
             p {
                 +(if (taskDiffResults.anyUndeclaredChanges)
                     "Note that this task was run in parallel (potentially explaining undeclared changes) with:" else
@@ -82,69 +81,64 @@ class DiffWriter {
             }
         }
 
-        fun BODY.writeBinary(binaryName: String, state: FileState, taskExecutionResults: TaskExecutionResults) {
-            div(c = "fileHeader") {
-                span(c = "filechange") { +state.toString().toLowerCase().capitalize() }
-                writeName(binaryName, taskExecutionResults)
-                visualize(binaryName)
+        fun HtmlBodyTag.writeBinary(difference: FileDifference, taskExecutionResults: TaskExecutionResults) {
+            div(c = "binaryFile changeBlock") {
+                div(c = "changeHeader") {
+                    span(c = difference.state.toString().toLowerCase()) { }
+                    writeName(difference.file, difference.state, taskExecutionResults)
+                }
+                visualize(difference.file)
             }
         }
 
-        fun BODY.writePatch(patchFile: PatchFile, taskExecutionResults: TaskExecutionResults) {
-
-            for (patch in patchFile.getPatches()) {
-                div(c = "patchFile") {
-                    div(c = "fileHeader") {
-                        writeName(patch.getNewFile(), taskExecutionResults)
-
-                        visualize(patch.getNewFile())
-
-                        if (patch is UnifiedPatch) {
-                            for (hunk in  patch.getHunks()) {
-                                writePatch(hunk)
-                            }
-                        }
+        fun HtmlBodyTag.writePatch(difference: FileContentsDifference, taskExecutionResults: TaskExecutionResults) {
+            div(c = "patchFile changeBlock") {
+                div(c = "changeHeader") {
+                    writeName(difference.file, null, taskExecutionResults)
+                }
+                visualize(difference.file)
+                div(c = "patches") {
+                    for (hunk in  difference.changes) {
+                        writePatch(hunk)
                     }
                 }
             }
         }
 
-        fun DIV.visualize(newFile: String) {
+        fun HtmlBodyTag.visualize(newFile: String) {
             val extension = FilenameUtils.getExtension(newFile)
             if (SUPPORTED_IMAGE_FORMATS.contains(extension)) {
-                img { src = DirectLink(newFile) }
+                div(c = "fileView") { img { src = DirectLink(newFile) } }
             }
         }
 
-        fun DIV.writePatch(hunk: UnifiedHunk) {
+        fun HtmlBodyTag.writePatch(hunk: UnifiedHunk) {
             div(c = "hunk") {
+                val hunkItr = hunk.getLines().iterator()
+
+                for (line in 1..4) {
+                    if (!hunkItr.hasNext()) {
+                        break
+                    }
+                    writeLine(hunkItr.next())
+                }
+
                 details {
-                    !"<summary>"
-
-                    var line = 0;
-                    var summaryEnded = false;
-                    for (l in hunk.getLines()) {
-                        if (line > 4 && !summaryEnded) {
-                            summaryEnded = true;
-                            !"</summary>"
-                        }
-                        line++
-
-                        writeLine(l)
+                    summary { +"..." }
+                    while (hunkItr.hasNext()) {
+                        writeLine(hunkItr.next())
                     }
 
-                    if (!summaryEnded) {
-                        !"</summary>"
-                    }
                 }
             }
         }
 
-        fun DIV.writeName(name: String, taskExecutionResults: TaskExecutionResults) {
+        fun HtmlBodyTag.writeName(name: String, state: FileState? = null, taskExecutionResults: TaskExecutionResults) {
             val rootDirOfDeclaredOutput: String? = TaskAnalyzer.findOutput(name, taskExecutionResults.task.getOutputs().getFiles())
 
             if (rootDirOfDeclaredOutput != null) {
-                !HtmlConstants.KNOWN_FILE
+                knownFile()
+                noteFileState(state)
                 span(c = "filename") { +rootDirOfDeclaredOutput }
                 val suffix = name.replaceFirstLiteral(rootDirOfDeclaredOutput, "")
 
@@ -152,18 +146,48 @@ class DiffWriter {
                     span(c = "filenameSuffix") { +suffix }
                 }
             } else {
-                !HtmlConstants.UNKNOWN_FILE
+                unknownFile()
+                noteFileState(state)
                 span(c = "filenameSuffix") { +name }
             }
         }
 
-        fun DIV.writeLine(line: UnifiedHunk.Line) {
+        fun HtmlBodyTag.writeLine(line: UnifiedHunk.Line) {
             when (line.getType()) {
                 UnifiedHunk.LineType.ADDED -> div(c = "added") { code { +"+ ${line.getContent()}" } }
                 UnifiedHunk.LineType.DELETED -> div(c = "deleted") { code { +"- ${line.getContent()}" } }
                 UnifiedHunk.LineType.COMMON -> div(c = "common") { code { +"&nbsp ${line.getContent()}" } }
             }
         }
-    }
 
+        fun HtmlBodyTag.noteFileState(fileState: FileState?) {
+            if (fileState != null) {
+                span(c = "fa-stack file-type-icon") {
+                    if (fileState.equals(FileState.ADDED)) {
+                        i(c = "font-shadow-added fa fa-circle fa-stack-2x")
+                        i(c = "fa fa-plus fa-stack-1x fa-stacked-symbol")
+                        i(c = "fa fa-file-o fa-stack-1x")
+                    } else if (fileState.equals(FileState.DELETED)) {
+                        i(c = "font-shadow-deleted fa fa-circle fa-stack-2x")
+                        i(c = "fa fa-minus fa-stack-1x fa-stacked-symbol")
+                        i(c = "fa fa-file-o fa-stack-1x")
+                    } else {
+                        i(c = "fa fa-file-o fa-stack-1x")
+                    }
+                }
+            }
+        }
+
+        fun HtmlBodyTag.unknownFile() {
+            span(c = "fa-stack file-type-icon") {
+                i(c = "fa fa-question fa-stack-1x")
+            }
+            span(c = "warning") { em { +"undeclared output" } }
+        }
+
+
+        fun HtmlBodyTag.knownFile() {
+            // empty -- display nothing for known files
+        }
+    }
 }

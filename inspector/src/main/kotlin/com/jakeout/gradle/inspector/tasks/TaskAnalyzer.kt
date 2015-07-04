@@ -1,10 +1,7 @@
 package com.jakeout.gradle.inspector.tasks
 
 import com.jakeout.gradle.inspector.InspectorConfig
-import com.jakeout.gradle.inspector.tasks.model.AnalysisResult
-import com.jakeout.gradle.inspector.tasks.model.FileState
-import com.jakeout.gradle.inspector.tasks.model.TaskDiffResults
-import com.jakeout.gradle.inspector.tasks.model.TaskExecutionResults
+import com.jakeout.gradle.inspector.tasks.model.*
 import com.jakeout.gradle.utils.DiffUtil
 import com.zutubi.diff.PatchFile
 import com.zutubi.diff.unified.UnifiedHunk
@@ -28,7 +25,7 @@ class TaskAnalyzer(val config: InspectorConfig, val task: Task, val buildStarted
             var added = 0
             var removed = 0
             val changesByType = HashMap<String, Int>()
-            val binaryFiles = HashMap<String, FileState>()
+            val changedFiles = LinkedList<FileDifference>()
             var anyUndeclaredChanges = false
             if (patch != null) {
                 val patches = patch.getPatches()
@@ -48,17 +45,17 @@ class TaskAnalyzer(val config: InspectorConfig, val task: Task, val buildStarted
                         } else {
                             changesByType.put(extension, count + 1)
                         }
-                        if(fromFile.exists() && toFile.exists()) {
-                            binaryFiles.put(to, FileState.CHANGED)
+                        if (fromFile.exists() && toFile.exists()) {
+                            changedFiles.add(FileDifference(to, from, FileState.CHANGED))
                         } else if (fromFile.exists() && !toFile.exists()) {
-                            binaryFiles.put(to, FileState.DELETED)
+                            changedFiles.add(FileDifference(to, from, FileState.DELETED))
                         } else if (!fromFile.exists() && toFile.exists()) {
-                            binaryFiles.put(to, FileState.ADDED);
+                            changedFiles.add(FileDifference(to, from, FileState.ADDED))
                         } else {
                             // This is being checked at a different time as when
                             // the diff file was written, so may have been
                             // changed on disk.
-                            binaryFiles.put(to, FileState.UNKNOWN)
+                            changedFiles.add(FileDifference(to, from, FileState.UNKNOWN))
                         }
                     }
                 }
@@ -96,14 +93,32 @@ class TaskAnalyzer(val config: InspectorConfig, val task: Task, val buildStarted
                 }
             }
 
+            val contentChange = LinkedList<FileContentsDifference>()
+            if (patch != null) {
+                for (p in patch.getPatches()) {
+                    val changes = LinkedList<UnifiedHunk>()
+                    if (p is UnifiedPatch) {
+                        for (hunk in  p.getHunks()) {
+                            changes.add(hunk)
+                        }
+                    }
+
+                    contentChange.add(FileContentsDifference(
+                            p.getNewFile(),
+                            p.getOldFile(),
+                            p.getType(),
+                            changes))
+                }
+            }
+
             return TaskDiffResults(
                     filesTouched = filesTouched,
                     hunksAdded = added,
                     hunksRemoved = removed,
                     anyUndeclaredChanges = anyUndeclaredChanges,
                     changesByType = changesByType,
-                    patchFile = patch,
-                    binaries = binaryFiles)
+                    changedContents = contentChange,
+                    changedFiles = changedFiles)
         }
 
         fun findOutput(file: String, files: FileCollection): String? {

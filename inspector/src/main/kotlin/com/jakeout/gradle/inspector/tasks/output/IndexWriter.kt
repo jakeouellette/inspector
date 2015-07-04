@@ -26,10 +26,10 @@ object IndexWriter {
                 while (s != null) {
                     if (s.contains(REPLACED_SIDEBAR)) {
                         if (subProjectIndicies.size() > 0) {
-                            ul {
+                            ul(c = "subprojects") {
                                 for (entry in subProjectIndicies.entrySet()) {
                                     li {
-                                        a {
+                                        a(c = "subproject") {
                                             attribute("href", entry.getValue().toString())
                                             +entry.getKey()
                                         }
@@ -38,23 +38,22 @@ object IndexWriter {
                             }
                         }
                         if (children.size() > 0) {
-                            ul {
+                            ul(c = "tasks") {
                                 for (analysisResult in children) {
                                     val executionResults = analysisResult.executionResults
                                     val diffResults = analysisResult.diffResults
                                     if (diffResults.filesTouched > 0) {
                                         li {
-                                            a {
+                                            a(c = "task") {
                                                 attribute("href", executionResults.path)
                                                 +executionResults.name
                                             }
-                                            +"[changed:${diffResults.filesTouched}]"
-                                            +"[+${diffResults.hunksAdded}]"
-                                            +"[-${diffResults.hunksRemoved}]"
                                         }
                                     } else {
                                         li {
-                                            +executionResults.name
+                                            span(c = "task") {
+                                                +executionResults.name
+                                            }
                                         }
                                     }
                                 }

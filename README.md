@@ -10,7 +10,9 @@ Gradle build inspector, clarifies what's going on inside your Gradle build. Feat
 
 ## Usage
 
-Checkout and install locally:
+**Easy Setup**: Navigate to the the [Gradle Plugin Repository](https://plugins.gradle.org/plugin/com.jakeout.gradle-inspector).  Follow the directions hosted there to set up the latest release.
+
+**To install from source**: Checkout and install locally:
 
     > ./gradlew install
 

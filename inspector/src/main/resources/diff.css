@@ -1,11 +1,47 @@
 #container {
-    width: 1274px;
+  width: 1274px;
 }
 
 #sidebar {
-    float: left;
-    width: 250px;
-    overflow-x: hidden;
+  float: left;
+}
+
+.tasks, .subprojects {
+  overflow-x: hidden;
+  box-shadow: 1px 1px 1px #ccc;
+  background-color: #F5F5F5;
+  width: 250px;
+}
+
+#sidebar ul {
+    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+    font-size: 0.9em;
+    padding-right: 0px;
+    padding-left: 0px;
+}
+
+#sidebar .task, #sidebar .subproject {
+  padding: 8px 8px;
+  display: block;
+  text-decoration: none;
+}
+
+#sidebar li {
+  list-style: none;
+  border-bottom: 1px solid #EEE;
+}
+
+#sidebar li:last-child {
+  border-bottom: 0px solid #000;
+}
+
+#sidebar a {
+  color: #88f;
+}
+
+#sidebar a:hover {
+  border-right: 6px solid gray;
+  background-color: #F0F0F0;
 }
 
 #graph {
@@ -13,16 +49,16 @@
     width: 1024px;
 }
 
-
 h1 {
     font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
-    font-size: 1.2em; margin: .1em 0;
+    font-size: 1.4em; margin: .1em 0;
     line-height: 2em;
 }
 
-ul {
+h2 {
     font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
-    font-size: 0.9em;
+    font-size: 1.2em; margin: .1em 0;
+    line-height: 2em;
 }
 
 .info {
@@ -30,11 +66,7 @@ ul {
     padding-right: 5px;
 }
 
-.fileHeader {
-    padding-bottom: 5px;
-    padding-top: 5px;
-    padding-left: 5px;
-    padding-right: 5px;
+.changeBlock {
     background-color: whitesmoke;
     border-color: gainsboro;
     border-top-left-radius: 7px;
@@ -44,15 +76,39 @@ ul {
 }
 
 .filename, .filenameSuffix {
-  border-width: 1px;
+  border-width: 0px;
+  border-bottom-width: 1px;
   border-color: lightgray;
   border-radius: 5px;
-  padding: 3px;
+  padding: 6px;
   margin: 2px;
   border-style: solid;
+  background-color: white;
 }
 
-.patchFile {
+.changeHeader {
+  padding: 9px;
+  min-height: 40px;
+}
+
+.fileView {
+  background-image: -webkit-linear-gradient(45deg, #ccc 25%, transparent 25%,transparent 75%, #ccc 75%, #ccc 100%), -webkit-linear-gradient(45deg, #ccc 25%, transparent 25%,transparent 75%, #ccc 75%, #ccc 100%);
+  -moz-background-size: 100px 100px;
+  -webkit-background-size: 21px;
+  background-position: 0 0, 50px 50px;
+  background-color: #ddd;
+  padding: 8px;
+ }
+
+.fileView img {
+  border: 2px solid #021a40;
+  border-style: dashed;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.changeBlock {
     margin-bottom: 15px;
     margin-top: 20px;
     border-width: 1px;
@@ -62,6 +118,7 @@ ul {
     border-color: gainsboro;
     overflow: scroll;
 }
+
 code {
     white-space: pre;
 }
@@ -130,17 +187,33 @@ text {
     color: #d25035
 }
 
-.fileHeader span.warning {
+.font-shadow-added {
+  text-shadow: 0px 1px 1px #565;
+  color: #dfd
+}
+
+details[open] summary {
+    display: none;
+}
+
+.font-shadow-deleted {
+  text-shadow: 0px 1px 1px #655;
+  color: #fdd
+}
+
+
+.changeHeader span.warning {
     display: none;
     color: #fff;
     text-decoration: none;
     padding: 3px;
 }
 
-.fileHeader:hover span.warning {
+.changeHeader:hover span.warning {
     display: block;
     position: absolute;
     background-color: #d25035;
     box-shadow: 0px 2px 3px #000000;
     margin: 2px 10px;
+    z-index: 2;
 }

@@ -50,11 +50,11 @@ The shell'd out Diff output is read using [Zutubi Diff](https://github.com/Zutub
 
 Diff report features:
 
+ - *new / fixed* Show non-text files! -- Show files that have been added or deleted by a task. Show images / media content that change
+
  - Diffs files -- A handful of lines of files are shown, the rest are hidden and can be expanded.
 
  - Diffs between two builds -- compare the differences (e.g., compare two Gradle builds, before and after Gradle is updated). Currently, only tasks for the second build are shown in the directed acyclic graph.
-
- - Show images / media content that change
 
  - Identify other running tasks and warns when diff may be inaccurate. Diff actions run at the start and end of each task, so if other tasks are running simultaneously, build behavior may produce strange outputs. (turning off parallel is recommended unless profiling this explicitly)
 

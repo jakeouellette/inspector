@@ -12,55 +12,30 @@ import org.gradle.api.Task
 import org.gradle.api.file.FileCollection
 import org.gradle.api.logging.Logging
 import org.gradle.api.tasks.TaskState
-import java.io.File
 import java.util.HashMap
 import java.util.LinkedList
-import java.util.regex.Pattern
 
 class TaskAnalyzer(val config: InspectorConfig, val task: Task, val buildStarted: Long) {
 
     companion object {
-        fun evaluateDiff(executionResults: TaskExecutionResults, patch: PatchFile?): TaskDiffResults {
+        fun evaluateDiff(executionResults: TaskExecutionResults, patch: PatchFile?, binaryPatchFile: PatchFile?): TaskDiffResults {
             var filesTouched = 0
             var added = 0
             var removed = 0
             val changesByType = HashMap<String, Int>()
             val changedFiles = LinkedList<FileDifference>()
             var anyUndeclaredChanges = false
-            if (patch != null) {
+            val contentChange = LinkedList<FileContentsDifference>()
+            if (patch != null && binaryPatchFile != null) {
                 val patches = patch.getPatches()
-                val extendedInfos = patch.getExtendedInfo()
-                for (info in extendedInfos) {
-                    val pattern = Pattern.compile(("Binary files (.*) and (.*) differ"))
-                    val matcher = pattern.matcher(info.toString())
-                    if (matcher.matches() && matcher.groupCount() == 2) {
-                        val from = matcher.group(1)
-                        val to = matcher.group(2)
-                        val fromFile = File(from)
-                        val toFile = File(to)
-                        val extension = FilenameUtils.getExtension(to)
-                        val count = changesByType.get(extension)
-                        if (count == null) {
-                            changesByType.put(extension, 1)
-                        } else {
-                            changesByType.put(extension, count + 1)
-                        }
-                        if (fromFile.exists() && toFile.exists()) {
-                            changedFiles.add(FileDifference(to, from, FileState.CHANGED))
-                        } else if (fromFile.exists() && !toFile.exists()) {
-                            changedFiles.add(FileDifference(to, from, FileState.DELETED))
-                        } else if (!fromFile.exists() && toFile.exists()) {
-                            changedFiles.add(FileDifference(to, from, FileState.ADDED))
-                        } else {
-                            // This is being checked at a different time as when
-                            // the diff file was written, so may have been
-                            // changed on disk.
-                            changedFiles.add(FileDifference(to, from, FileState.UNKNOWN))
-                        }
-                    }
+                val binaryPatches = binaryPatchFile.getPatches()
+                val isBinary = HashMap<String, Boolean>()
+                for (p in binaryPatches) {
+                    isBinary.put(p.getNewFile(), true)
                 }
 
                 for (p in patches) {
+                    isBinary.put(p.getNewFile(), false)
                     filesTouched++
 
                     val rootDirOfDeclaredOutput: String? = findOutput(p.getNewFile(), executionResults.task.getOutputs().getFiles())
@@ -69,18 +44,13 @@ class TaskAnalyzer(val config: InspectorConfig, val task: Task, val buildStarted
                         anyUndeclaredChanges = true
                     }
 
-                    val extension = FilenameUtils.getExtension(p.getNewFile())
+                    incrementExtension(changesByType, p.getNewFile())
 
-                    val count = changesByType.get(extension)
-                    if (count == null) {
-                        changesByType.put(extension, 1)
-                    } else {
-                        changesByType.put(extension, count + 1)
-                    }
-
+                    val changes = LinkedList<UnifiedHunk>()
                     if (p is UnifiedPatch) {
-                        for (h in p.getHunks()) {
-                            for (l in h.getLines()) {
+                        for (hunk in  p.getHunks()) {
+                            changes.add(hunk)
+                            for (l in hunk.getLines()) {
                                 when (l.getType()) {
                                     UnifiedHunk.LineType.ADDED -> added++
                                     UnifiedHunk.LineType.DELETED -> removed++
@@ -90,24 +60,31 @@ class TaskAnalyzer(val config: InspectorConfig, val task: Task, val buildStarted
                             }
                         }
                     }
-                }
-            }
-
-            val contentChange = LinkedList<FileContentsDifference>()
-            if (patch != null) {
-                for (p in patch.getPatches()) {
-                    val changes = LinkedList<UnifiedHunk>()
-                    if (p is UnifiedPatch) {
-                        for (hunk in  p.getHunks()) {
-                            changes.add(hunk)
-                        }
-                    }
 
                     contentChange.add(FileContentsDifference(
                             p.getNewFile(),
                             p.getOldFile(),
                             p.getType(),
                             changes))
+                }
+
+                for (p in binaryPatches) {
+                    filesTouched++
+                    if (isBinary.get(p.getNewFile())) {
+                        var state = FileState.UNKNOWN
+                        if (p is UnifiedPatch) {
+                            for (h in p.getHunks()) {
+                                for (l in h.getLines()) {
+                                    when (l.getType()) {
+                                        UnifiedHunk.LineType.ADDED -> FileState.ADDED
+                                        UnifiedHunk.LineType.DELETED -> FileState.DELETED
+                                    }
+                                }
+                            }
+                        }
+                        incrementExtension(changesByType, p.getNewFile());
+                        changedFiles.add(FileDifference(p.getNewFile(), p.getOldFile(), state))
+                    }
                 }
             }
 
@@ -129,6 +106,17 @@ class TaskAnalyzer(val config: InspectorConfig, val task: Task, val buildStarted
             }
             return null
         }
+
+        private fun incrementExtension(changesByType: HashMap<String, Int>, file: String) {
+            val extension = FilenameUtils.getExtension(file)
+
+            val count = changesByType.get(extension)
+            if (count == null) {
+                changesByType.put(extension, 1)
+            } else {
+                changesByType.put(extension, count + 1)
+            }
+        }
     }
 
     var results: AnalysisResult? = null
@@ -140,10 +128,15 @@ class TaskAnalyzer(val config: InspectorConfig, val task: Task, val buildStarted
             val patchFile: PatchFile? = DiffUtil.diff(
                     config.projectBuildDir,
                     config.taskDir(task),
-                    config.taskOut(task))
+                    config.taskOut(task), false)
+
+            val binaryPatchFile: PatchFile? = DiffUtil.diff(
+                    config.projectBuildDir,
+                    config.taskDir(task),
+                    config.taskOut(task), true)
 
             val results = AnalysisResult(
-                    diffResults = evaluateDiff(execution, patchFile),
+                    diffResults = evaluateDiff(execution, patchFile, binaryPatchFile),
                     executionResults = execution,
                     comparisonResults = getComparisonResults(execution))
             this.results = results
@@ -163,8 +156,10 @@ class TaskAnalyzer(val config: InspectorConfig, val task: Task, val buildStarted
             return null
         } else {
             val compareTaskOut = config.compareTaskOut(task)
-            val comparePatchFile = DiffUtil.diff(config.compareTaskDir(task), config.taskDir(task), compareTaskOut)
-            return evaluateDiff(execution, comparePatchFile)
+            val comparePatchFile = DiffUtil.diff(config.compareTaskDir(task), config.taskDir(task), compareTaskOut, false)
+            val binaryComparePatchFile = DiffUtil.diff(config.compareTaskDir(task), config.taskDir(task), compareTaskOut, true)
+
+            return evaluateDiff(execution, comparePatchFile, binaryComparePatchFile)
         }
     }
 

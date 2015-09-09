@@ -1,3 +1,5 @@
+[![Android Gems](http://www.android-gems.com/badge/jakeouellette/inspector.svg?branch=master)](http://www.android-gems.com/lib/jakeouellette/inspector)
+
 # Inspector
 
 Gradle build inspector, clarifies what's going on inside your Gradle build. Features:

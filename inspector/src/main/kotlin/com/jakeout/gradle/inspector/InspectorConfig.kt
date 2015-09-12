@@ -21,4 +21,5 @@ data class InspectorConfig(
     fun taskDir(task: Task) = File(incrementalDir, task.nameString())
     fun compareTaskDir(task: Task) = File(compareIncrementalDir, task.nameString())
     fun Task.nameString() = getName().replace(":", ".")
+    fun index() = File(reportDir, "index.html")
 }

@@ -72,6 +72,8 @@ public class InspectorGradleListener(val config: InspectorConfig, val project: P
             FileUtils.forceMkdir(config.reportDir)
             FileUtils.forceMkdir(config.incrementalDir)
 
+            (project.getExtensions().create("inspector", javaClass<InspectorPluginExtension>()) as InspectorPluginExtension).index = config.index()
+
             val hook = InspectorGradleListener(config, project)
             project.getGradle().addListener(hook)
             return hook
@@ -129,8 +131,6 @@ public class InspectorGradleListener(val config: InspectorConfig, val project: P
         }
     }
 
-    fun getIndex(): File = File(config.reportDir, "index.html")
-
     override fun buildFinished(buildResult: BuildResult) {
         try {
             FileUtils.forceMkdir(File(config.reportDir, "vis"))
@@ -154,10 +154,8 @@ public class InspectorGradleListener(val config: InspectorConfig, val project: P
 
             val subprojectsByFile = HashMap<String, File>()
             for (subProj in project.getChildProjects().values()) {
-                val plugin = subProj.getPlugins().findPlugin(javaClass<InspectorPlugin>()) as InspectorPlugin
-                val listener = plugin.listener
-                if (listener != null) {
-                    subprojectsByFile.put(subProj.getName(), listener.getIndex())
+                if (subProj.getExtensions().getByName("inspector") != null) {
+                    subprojectsByFile.put(subProj.getName(), (subProj.getExtensions().getByName("inspector") as InspectorPluginExtension).index)
                 }
             }
 
@@ -184,13 +182,13 @@ public class InspectorGradleListener(val config: InspectorConfig, val project: P
             }
 
             IndexWriter.write(
-                    getIndex(),
+                    config.index(),
                     subprojectsByFile,
                     sortedResults,
                     File(File(config.reportDir, "vis"), "dag.js"))
-            println("Build inspection written to file://${getIndex()}")
+            println("Build inspection written to file://${config.index()}")
             if (config.showInspection) {
-                Desktop.getDesktop().browse(URI("file://${getIndex()}"))
+                Desktop.getDesktop().browse(URI("file://${config.index()}"))
             }
         } catch (e: Throwable) {
             e.printStackTrace()
